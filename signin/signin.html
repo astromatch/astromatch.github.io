@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Astrotalk Sign in</title>
+    <link href="https://cdn.jsdelivr.net/npm/gotham-fonts@1.0.3/css/gotham-rounded.min.css" rel="stylesheet">
+    <link href="signInStyle.css" rel="stylesheet">
+    <script src="signInScript.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="logo"></div>
+        <p class="signin-text">Sign in</p>
+        <p class="email-text">
+            <span>Email</span>
+            <span class="info-icon"><img src="https://www.svgrepo.com/show/447016/information.svg" alt="i"></span>
+        </p>
+        <input type="email" id="emailInput">
+        <input type="password" id="passwordInput">
+        <button class="cta" id="nextcta" onclick="validateUser()">Next</button>
+        <div class="error-message" id="errorMessage"></div>
+        <button class="cta" style="display: none;" id="signInButton" onclick="signIn()">Sign in</button>
+        <div class="trouble-text">Having trouble signing in?</div>
+        <div class="divider">or</div>
+        <button class="create-account-cta">Create Account</button>
+    </div>
+    <div class="footer">
+        Astrotalk copyright © 2023 | <a href="#">Privacy & Legal</a> | <a href="#">Contact</a>
+    </div>
+</body>
+</html>

@@ -1,0 +1,166 @@
+body {
+    background-color: #FEFEFF;
+    margin: 0;
+    padding: 0;
+    font-family: 'Gotham Rounded', Arial, sans-serif;
+}
+
+.container {
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
+    padding: 20px;
+    text-align: center;
+}
+
+.logo {
+    width: 50px;
+    height: 50px;
+    background-image: url('tesla_logo.png'); /* Replace with your image file */
+    background-size: cover;
+    background-repeat: no-repeat;
+    margin-top: 10px;
+}
+
+.signin-text {
+    font-weight: bold;
+    font-size: 40px; /* Increase font size to 40px */
+    color: #191B1F;
+    text-align: left; /* Align at the start */
+}
+
+.email-text {
+    color: #5B5F63;
+    font-size: 16px; /* Smaller font size */
+    text-align: left; /* Align at the start */
+    margin-top: 0; /* Remove the default margin */
+}
+
+.info-icon {
+    position: relative;
+    display: inline-block;
+    cursor: help; /* Add cursor pointer */
+    width: 20px; /* Set a fixed width */
+    height: 20px; /* Set a fixed height */
+}
+
+.info-icon img {
+    width: 100%;
+    height: 100%;
+}
+
+.info-icon:hover::after {
+    content: "If your account is linked to an email you no longer have access to, sign in to your account and update your email under account settings.";
+    background-color: #fff;
+    border: 1px solid #5B5F63;
+    padding: 5px;
+    position: absolute;
+    top: 30px; /* Adjust the positioning */
+    left: 0;
+    z-index: 1;
+    font-size: 12px;
+    color: #5B5F63;
+    width: 180px; /* Adjust the width to fit the content */
+    text-align: left; /* Align the text to the left */
+}
+
+input[type="email"] {
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0;
+    border: 1px solid #5B5F63;
+    color: #5B5F63;
+    border-radius: 10px; /* Rounded borders */
+    background-color: #F4F5F5; /* Fill with color #F4F5F5 */
+}
+
+input[type="password"] {
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0;
+    border: 1px solid #5B5F63;
+    color: #5B5F63;
+    border-radius: 10px; /* Rounded borders */
+    background-color: #F4F5F5; /* Fill with color #F4F5F5 */
+    display: none; /* Initially hidden */
+}
+
+.cta {
+    background-color: #9FB5F0;
+    color: #fff;
+    padding: 12px 24px; /* More rectangular and more spacing */
+    border: none;
+    cursor: pointer;
+    border-radius: 10px; /* Rounded borders */
+    width: 100%;
+    max-width: none;
+    margin-top: 10px; /* Add 10px spacing */
+}
+
+.cta:hover {
+    background-color: #3E6AE0;
+}
+
+
+.trouble-text {
+    color: #414549;
+    opacity: 0.7;
+    text-decoration: underline;
+    cursor: pointer; /* Add cursor pointer */
+    transition: text-decoration 0.3s; /* Smooth text-decoration transition */
+    margin-top: 10px; /* Add 10px spacing */
+}
+
+.trouble-text:hover {
+    text-decoration: underline bold; /* Make underlining bold on hover */
+}
+
+.divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin: 20px 0;
+}
+
+.divider::before, .divider::after {
+    content: "";
+    flex: 1;
+    border-top: 1px solid #5B5F63;
+}
+
+.divider::before {
+    margin-right: 10px;
+}
+
+.divider::after {
+    margin-left: 10px;
+}
+
+.create-account-cta {
+    background-color: #F5F5F4; /* Change color to #F5F5F4 */
+    color: #393C41;
+    padding: 12px 24px; /* More rectangular and more spacing */
+    border: none;
+    cursor: pointer;
+    border-radius: 10px; /* Rounded borders */
+    width: 100%;
+    max-width: none;
+    opacity: 1; /* Set opacity to 1 */
+}
+
+.error-message {
+    color: #E0ADA5;
+    margin-top: 10px;
+    display: none; /* Initially hidden */
+}
+
+.footer {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    padding: 10px;
+    color: #191B1F;
+    text-align: center;
+    font-size: 14px; /* Make footer text smaller */
+    opacity: 0.7; /* Reduce opacity for footer text */
+}

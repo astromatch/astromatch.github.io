@@ -1,0 +1,120 @@
+body {
+    background-color: #FEFEFF;
+    margin: 0;
+    padding: 0;
+    font-family: 'Gotham Rounded', Arial, sans-serif;
+}
+
+/* Header styles */
+header {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    background-color: rgb(0 0 0 / 0%);
+    color: #fefefe;
+    text-align: center;
+    padding: 10px;
+    z-index: 1;
+    }
+
+.header-container {
+    max-width: 400px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+nav ul {
+    list-style: none;
+    padding: 0;
+    display: flex;
+}
+
+nav li {
+    margin-right: 30px;
+}
+
+nav a {
+    color: #fff;
+    text-decoration: none;
+}
+
+.header-icons {
+    display: flex; /* Use flexbox to align items horizontally */
+    align-items: center; /* Vertically center the items */
+    margin-left: 600px;
+}
+
+.header-icons a {
+    margin-right: 15px; /* Adjust the spacing between the icons */
+}
+
+.header-icons img {
+    width: 32px;
+    height: 32px;
+}
+
+/* Video background styles */
+main {
+    position: relative;
+}
+
+#background-video {
+    width: 100%;
+}
+
+.content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+}
+
+.homepage-text {
+    font-weight: bold;
+    font-size: 40px;
+    color: #fff;
+    text-align: left;
+}
+
+.cta.homepage-cta {
+    background-color: #9FB5F0;
+    color: #fff;
+    padding: 12px 24px;
+    border: none;
+    cursor: pointer;
+    border-radius: 10px;
+    margin: 15px;
+    margin-top: 20px !important;
+}
+
+.cta.homepage-cta:hover {
+    background-color: #3E6AE0;
+}
+
+/* Footer styles */
+footer {
+    background-color: rgb(58 123 255 / 0%); /* Make the footer transparent with some opacity */
+    color: #fff;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    padding: 10px;
+    text-align: center;
+    font-size: 14px;
+    z-index: 3; /* Set z-index to display the footer over the video */
+}
+
+footer a {
+    text-decoration: none;
+    color: #fff;
+    margin: 0 10px;
+}
+
+footer a:hover {
+    text-decoration: underline;
+}

@@ -1,15 +1,16 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <meta charset="UTF-8">
     <title>Astrotalk Sign up</title>
     <link href="https://cdn.jsdelivr.net/npm/gotham-fonts@1.0.3/css/gotham-rounded.min.css" rel="stylesheet">
-    <link href="signupStyle.css" rel="stylesheet">
-    <script src="signupScript.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.3/css/intlTelInput.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.3/js/intlTelInput.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.3/js/utils.js"></script>
+    <link href="/signup/signupStyle.css" rel="stylesheet">
+    <script src="https://code.iconify.design/3/3.1.0/iconify.min.js"></script>
+    <script src="/signup/signupScript.js"></script>
+
 </head>
+
 <body>
     <div class="container">
         <div class="logo"></div>
@@ -23,17 +24,27 @@
         </p>
         <input type="date" id="dobInput">
         <p class="email-text">
-            <span>Mobile</span>
+            <span>Phone Number</span>
         </p>
-        <div class="mobile-input">
-            <div class="iti-container">
-                <select id="countryCodeInput" class="iti__separate-dial-code"></select>
-                <div class="iti">
-                    <input type="tel" id="mobileInput" placeholder="Phone Number">
+
+
+        <div class="select-box">
+            <div class="selected-option">
+                <div>
+                    <!-- Placeholder icon and initial phone code -->
+                    <span class="iconify" data-icon="flag:in-4x3"></span>
+                    <strong class="std">+91</strong>
                 </div>
+                <!-- Input field for phone number -->
+                <input type="tel" name="tel" placeholder="Phone Number">
             </div>
-            
+            <!-- Search box and options list -->
+            <div class="options">
+                <input type="text" class="search-box" placeholder="Search Country Name">
+                <ol></ol> <!-- List of countries will be populated here -->
+            </div>
         </div>
+        
 
         <p class="email-text">
             <span>Email</span>
@@ -50,8 +61,8 @@
         <input type="password" id="passwordInput">
         <button class="cta" id="submitcta" onclick="signupUser()">Submit</button>
 
-          <!-- Success message div (hidden by default) -->
-          <div class="success-message" id="successMessage" style="display: none;">
+        <!-- Success message div (hidden by default) -->
+        <div class="success-message" id="successMessage" style="display: none;">
             <p>Signup successful! Please check your email for an OTP.</p>
         </div>
 
@@ -63,11 +74,12 @@
             <input type="text" id="otpInput">
             <button class="cta" id="verifyOtpButton" onclick="verifyOtp()">Verify OTP</button>
         </div>
-        
+
         <div class="error-message" id="errorMessage"></div>
         <div class="footer">
             Astrotalk copyright © 2023 | <a href="#">Privacy & Legal</a> | <a href="#">Contact</a>
         </div>
     </div>
 </body>
+
 </html>

@@ -353,6 +353,60 @@ document.addEventListener('DOMContentLoaded', populateCountryOptions);
 
 
 
+document.addEventListener("DOMContentLoaded", function () {
+    // Get form elements
+    var nameInput = document.getElementById("nameInput");
+    var dobInput = document.getElementById("dobInput");
+    var countryCodeInput = document.getElementById("countryCodeInput");
+    var mobileInput = document.getElementById("mobileInput");
+    var emailInput = document.getElementById("emailInput");
+    var usernameInput = document.getElementById("usernameInput");
+    var passwordInput = document.getElementById("passwordInput");
+    var submitButton = document.getElementById("submitcta");
+    var errorMessage = document.getElementById("errorMessage");
+  
+    // Function to check if any field is empty
+    function isAnyFieldEmpty() {
+      return (
+        !nameInput.value ||
+        !dobInput.value ||
+        !countryCodeInput.value ||
+        !mobileInput.value ||
+        !emailInput.value ||
+        !usernameInput.value ||
+        !passwordInput.value
+      );
+    }
+  
+    // Function to display an error message
+    function displayErrorMessage(message) {
+      errorMessage.innerText = message;
+      errorMessage.style.display = "block";
+    }
+  
+    // Function to hide the error message
+    function hideErrorMessage() {
+      errorMessage.style.display = "none";
+    }
+  
+    // Add click event listener to the submit button
+    submitButton.addEventListener("click", function (event) {
+      if (isAnyFieldEmpty()) {
+        // If any field is empty, prevent form submission and display an error message
+        event.preventDefault();
+        displayErrorMessage("Please fill all fields.");
+      } else {
+        // If all fields are filled, display a success message
+        hideErrorMessage();
+        alert("Form submitted successfully!");
+      }
+    });
+  });
+  
+  
+
+
+
 // Initialize the phone input element
 // var input = document.querySelector("#mobileNumberInput");
 // var countryCodeInput = document.querySelector("#countryCodeInput");

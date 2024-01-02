@@ -1,74 +1,97 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<html>
+  <head>
+    <meta charset="UTF-8" />
     <title>Astrotalk Sign up</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gotham-fonts@1.0.3/css/gotham-rounded.min.css">
-    <link rel="stylesheet" href="/signup/signupStyle.css">
-    <script src="https://code.iconify.design/3/3.1.0/iconify.min.js" defer></script>
-    <script src="/signup/signupScript.js" defer></script>
-</head>
-
-<body>
+    <link
+      href="https://cdn.jsdelivr.net/npm/gotham-fonts@1.0.3/css/gotham-rounded.min.css"
+      rel="stylesheet"
+    />
+    <link href="signupStyle.css" rel="stylesheet" />
+    <script src="signupScript.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.3/css/intlTelInput.min.css"
+    />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.3/js/intlTelInput.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.3/js/utils.js"></script>
+  </head>
+  <body>
     <div class="container">
-        <div class="logo"></div>
+      <div class="logo"></div>
+      <p class="signin-text">Create An Account</p>
+      <p class="email-text">
+        <span>Name</span>
+      </p>
+      <input type="text" id="nameInput" />
+      <p class="email-text">
+        <span>Date of Birth</span>
+      </p>
+      <input type="date" id="dobInput" />
+      <p class="email-text">
+        <span>Mobile</span>
+      </p>
+      <div class="mobile-input">
+        <select id="countryCodeInput" class="iti__separate-dial-code"></select>
 
-        <form id="signupForm">
-            <p class="signin-text">Create An Account</p>
+        <input type="tel" id="mobileInput" placeholder="Phone Number" />
+      </div>
 
-            <p>
-                <label for="nameInput">Name</label>
-                <input type="text" id="nameInput" name="name">
-            </p>
+      <p class="email-text">
+        <span>Email</span>
+        <span class="info-icon"
+          ><img
+            src="https://www.svgrepo.com/show/447016/information.svg"
+            alt="i"
+        /></span>
+      </p>
+      <input
+        type="email"
+        id="emailInput"
+        pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}"
+        required
+      />
+      <p class="email-text">
+        <span>Username</span>
+      </p>
+      <input type="text" id="usernameInput" />
+      <p class="email-text">
+        <span>Password</span>
+      </p>
+      <input type="password" id="passwordInput" />
+      <button class="cta" id="submitcta" onclick="signupUser()">Submit</button>
 
-            <p class="phonefield">
-                <label for="phoneInput">Phone Number</label>
-                <input type="tel" id="phoneInput" name="phoneNumber">
-            </p>
+      <!-- Success message div (hidden by default) -->
+      <div class="success-message" id="successMessage" style="display: none">
+        <p>Signup successful! Please check your email for an OTP.</p>
+      </div>
 
-            <p>
-                <label for="dobInput">Date of Birth</label>
-                <input type="date" id="dobInput" name="dob">
-            </p>
-
-            <p>
-                <label for="emailInput">Email</label>
-                <input type="email" id="emailInput" name="email" pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}" required>
-            </p>
-
-            <p>
-                <label for="usernameInput">Username</label>
-                <input type="text" id="usernameInput" name="username">
-            </p>
-
-            <p>
-                <label for="passwordInput">Password</label>
-                <input type="password" id="passwordInput" name="password">
-            </p>
-
-            <button class="cta" id="submitcta" onclick="signupUser()">Submit</button>
-
-            <!-- Success message div (hidden by default) -->
-            <div class="success-message" id="successMessage" style="display: none;">
-                <p>Signup successful! Please check your email for an OTP.</p>
-            </div>
-
-            <!-- OTP input and Verify OTP button (hidden by default) -->
-            <div class="otp-container" id="otpContainer" style="display: none;">
-                <p>
-                    <label for="otpInput">Enter OTP</label>
-                </p>
-                <input type="text" id="otpInput" name="otp">
-                <button class="cta" id="verifyOtpButton" onclick="verifyOtp()">Verify OTP</button>
-            </div>
-
-            <div class="error-message" id="errorMessage"></div>
-        </form>
-
-        <div class="footer">
-            Astrotalk copyright © 2023 | <a href="#">Privacy & Legal</a> | <a href="#">Contact</a>
+      <!-- OTP input and Verify OTP button (hidden by default) -->
+      <div class="otp-container" id="otpContainer" style="display: none">
+        <p class="email-text">
+          <span>Enter OTP</span>
+        </p>
+        <input type="text" id="otpInput" />
+        <button class="cta" id="verifyOtpButton" onclick="verifyOtp()">
+          Verify OTP
+        </button>
+        <div
+          class="success-message"
+          id="otpSucessMessage"
+          style="display: none"
+        >
+          <p>
+            OTP Verified, please <a href="../signin/signin.html">login</a> using
+            your E-mail.
+          </p>
         </div>
+      </div>
+
+      <div class="error-message" id="errorMessage"></div>
+      <div class="footer">
+        Astrotalk copyright © 2023 | <a href="#">Privacy & Legal</a> |
+        <a href="#">Contact</a>
+      </div>
     </div>
-</body>
+  </body>
 </html>

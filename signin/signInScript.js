@@ -46,12 +46,12 @@ function signIn() {
     var password = document.getElementById("passwordInput").value;
 
     var data = {
-        "email": email, // Assuming you use "username" for email in your Go code
+        "email": email,
         "password": password
     };
 
     // Make an AJAX request to your Go login endpoint
-    fetch("http://localhost:8080/login", { // Use the correct URL
+    fetch("http://localhost:8080/login", {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
@@ -62,6 +62,12 @@ function signIn() {
     .then(data => {
         // Handle the response from your Go backend here
         console.log(data); // You can replace this with your custom logic
+
+        // Check if the login was successful
+        if (data.message === "User logged in successfully") {
+            // Redirect to the homepage
+            window.location.href = "../userHomePage/userHomePage.html"; // Replace with the actual path
+        }
     })
     .catch(error => {
         console.error("Error:", error);

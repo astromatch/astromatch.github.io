@@ -61,12 +61,12 @@ function signIn() {
     .then(response => response.json())
     .then(data => {
         // Handle the response from your Go backend here
-        console.log(data); // You can replace this with your custom logic
+        console.log(data); // replace this with your custom logic
 
         // Check if the login was successful
         if (data.message === "User logged in successfully") {
             // Redirect to the homepage
-            window.location.href = "../userHomePage/userHomePage.html"; // Replace with the actual path
+            window.location.href = "../userHomePage/userHomePage.html";
         }
     })
     .catch(error => {

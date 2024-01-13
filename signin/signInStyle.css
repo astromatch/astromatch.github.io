@@ -65,7 +65,7 @@ body {
 }
 
 input[type="email"] {
-    width: 100%;
+    width: 95%;
     padding: 10px;
     margin: 10px 0;
     border: 1px solid #5B5F63;

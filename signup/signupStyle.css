@@ -6,7 +6,7 @@ body {
 }
 
 .container {
-    width: 110%;
+    width: auto;
     max-width: 370px;
     margin: auto;
     padding: 0px;
@@ -67,8 +67,8 @@ body {
 input[type="text"],
 input[type="date"],
 input[type="email"],
-input[type="password"],
-input[type="tel"] {
+input[type="password"]
+ {
     width: 100%;
     padding: 10px;
     margin: 5px 0;
@@ -76,7 +76,7 @@ input[type="tel"] {
     color: #5B5F63;
     border-radius: 8px;
     background-color: #F4F5F5;
-    display: flex;a
+    display: flex;
 }
 
 input[type="password"] {
@@ -88,6 +88,7 @@ input[type="password"] {
     border-radius: 8px;
     background-color: #F4F5F5;
 }
+
 .cta {
     background-color: #9FB5F0;
     color: #fff;
@@ -110,6 +111,12 @@ input[type="password"] {
     display: none;
 }
 
+.success-message {
+    color: #2F8D47;
+    margin-top: 10px;
+    display: none;
+}
+
 .footer {
     position: bottom;
     bottom: 10px;
@@ -124,25 +131,21 @@ input[type="password"] {
 /* Mobile input styles */
 .mobile-input {
     display: flex;
-    align-items: right;
-    width: 100%;
-    margin: 5px 0;
+    align-items: flex-start;
+    width: 24.5rem;
+    /* Adjust the width as needed */
+    margin: 0px;
 }
 
 /* Position "iti" (standard code input) on the left and mobile input on the right */
-.iti-container {
-    display: flex;
-    align-items: center;
-    margin-right: 10px; /* Add some spacing between "iti" and the mobile input */
-}
 
 .iti {
     flex: 1; /* Take up available space */
 }
 
 input[type="tel"] {
-    flex: 5; /* Take up available space */
-    width: 335px;
+     /* Take up available space, adjust the value as needed */
+    width: 100%; /* Adjust the width as needed */
     padding: 11px;
     margin: 0; /* Remove any margin on the mobile input */
     border: 1.5px solid #5B5F63;
@@ -154,11 +157,12 @@ input[type="tel"] {
 /* Adjust the dropdown style if needed */
 .iti__separate-dial-code {
     padding: 10px;
+    justify-content: flex-start;
     border: 1.5px solid #5B5F63;
     color: #5B5F63;
     border-radius: 8px;
     background-color: #F4F5F5;
-    align-item: left;
+    align-items: flex-start;
     margin-right: 15px;
-    
+    width: 150px; /* Adjust the width as needed */
 }

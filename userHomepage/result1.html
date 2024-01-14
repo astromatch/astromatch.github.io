@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Astromatch</title>
+    <link href="https://cdn.jsdelivr.net/npm/gotham-fonts@1.0.3/css/gotham-rounded.min.css" rel="stylesheet">
+    <link href="userHomepage.css" rel="stylesheet">
+    <link rel="stylesheet" href="userHomepage.css">
+    <link rel="stylesheet" href="result1.css">
+</head>
+
+<body>
+    <header class="site-header">
+        <div class="header-container">
+            <div class="logo"></div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="#">Matches</a></li>
+                    <li><a href="#">Messages</a></li>
+                    <li><a href="#">Products</a></li>
+                    <li><a href="#">Support</a></li>
+                </ul>
+            </nav>
+            <div class="header-icons">
+                <a href="../signin/signin.html"><img src="../asset/img/user-profile.svg" alt="Signin"></a>
+                <a href="../pages/faq.html"><img src="../asset/img/question2.svg" alt="FAQ"></a>
+            </div>
+        </div>
+    </header>
+    <main class="site-main">
+        <div class="background-image"></div>
+        <div class="content">
+            <p class="homepage-text"></p>
+        </div>
+        <button id="toggle-mode" class="toggle-button">
+            <i id="mode-icon" class="fas fa-sun"></i>
+        </button>
+        <div class="container" id="form-container">
+            <form id="input-form">
+                <div class="input-container">
+                    <label for="input1">Month1:</label>
+                    <input type="number" id="input1" name="input1">
+                </div>
+                <div class="input-container">
+                    <label for="input2">Day1:</label>
+                    <input type="number" id="input2" name="input2">
+                </div>
+                <div class="input-container">
+                    <label for="input3">Month2:</label>
+                    <input type="number" id="input3" name="input3">
+                </div>
+                <div class="input-container">
+                    <label for="input4">Day2:</label>
+                    <input type="number" id="input4" name="input4">
+                </div>
+                <button type="submit">Submit</button>
+            </form>
+        </div>
+        <div id="result"></div>
+        <div class="designed-text">
+            <p>Discover the magic of astrological compatibility!</p>
+            <p>Find your perfect match among the stars.</p>
+        </div>
+        <!-- Blog Section -->
+        <div class="blog">
+            <h2>Why AstroMatch is the Best Website for Astrological Matches</h2>
+            <p>Are you tired of swiping left and right in search of the perfect match? It's time to explore a new dimension
+                of compatibility – Astrological compatibility! At AstroMatch, we bring you a unique and exciting way to
+                find your ideal partner based on the alignment of the stars.</p>
+            <p>Our platform goes beyond the superficial judgments of traditional dating apps. Instead, we delve into the
+                mystical world of astrology to help you connect with someone truly special.</p>
+            <h3>Details about Inputs</h3>
+            <p>Our input fields require the birth month and day of both individuals. These details are essential to
+                calculate astrological compatibility accurately. By providing this information, you open the door to a
+                world of personalized insights.</p>
+            <h3>How AstroMatch Creates Magical Bonds</h3>
+            <p>AstroMatch uses advanced astrological algorithms to analyze the compatibility between two individuals. We
+                consider astrological signs and birthdates to create a detailed compatibility report.</p>
+            <p>By understanding the cosmic connections between you and potential matches, AstroMatch creates bonds that
+                are truly magical. Explore the depths of compatibility like never before and embark on a journey of love
+                and discovery.</p>
+            <p>Join us on this cosmic adventure and let the stars guide you to love like never before. Sign up with
+                AstroMatch today and open the door to a universe of possibilities!</p>
+        </div>
+    </main>
+    <footer class="site-footer">
+        <p class="footer-text">Astrotalk copyright © 2023 | <a href="../frontend/pages/tandc.html">Terms & Conditions</a>
+            | <a href="#">Contact</a></p>
+    </footer>
+    <script src="result1.js"></script>
+</body>
+
+</html>

@@ -12,7 +12,7 @@ function signupUser() {
     var errorMessage = document.getElementById("errorMessage");
 
     // Make an AJAX request to sign up the user using the provided endpoint
-    fetch("http://localhost:8080/signup", {
+    fetch("http://ec2-15-206-93-175.ap-south-1.compute.amazonaws.com:8080/signup", {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
@@ -52,7 +52,7 @@ function verifyOtp() {
     var errorMessage = document.getElementById("errorMessage");
 
     // Make an AJAX request to verify the user with the provided OTP and stored email
-    fetch("http://localhost:8080/verifyuser", {
+    fetch("http://ec2-15-206-93-175.ap-south-1.compute.amazonaws.com:8080/verifyuser", {
         method: "POST",
         headers: {
             "Content-Type": "application/json",

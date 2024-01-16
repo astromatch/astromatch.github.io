@@ -6,7 +6,7 @@ function validateUser() {
     var nextButton = document.getElementById("nextcta");
 
     // Make an AJAX request to validate the user using the provided endpoint
-    fetch("http://localhost:8080/validateUser", {
+    fetch("http://ec2-15-206-93-175.ap-south-1.compute.amazonaws.com:8080/validateUser", {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
@@ -51,7 +51,7 @@ function signIn() {
     };
 
     // Make an AJAX request to your Go login endpoint
-    fetch("http://localhost:8080/login", {
+    fetch("http://ec2-15-206-93-175.ap-south-1.compute.amazonaws.com:8080/login", {
         method: "POST",
         headers: {
             "Content-Type": "application/json"

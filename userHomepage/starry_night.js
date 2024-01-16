@@ -59,7 +59,7 @@ document.addEventListener('DOMContentLoaded', function () {
         };
 
         try {
-            const response = await fetch('http://localhost:8080/compatibility', options);
+            const response = await fetch('http://ec2-15-206-93-175.ap-south-1.compute.amazonaws.com:8080/compatibility', options);
             if (!response.ok) {
                 throw Error(response.status);
             }

@@ -1,0 +1,3 @@
+import { beforeEach,describe,expect,it } from 'vitest'; import { peopleStore } from './storage';
+const memory=new Map<string,string>(); Object.defineProperty(globalThis,'localStorage',{value:{getItem:(key:string)=>memory.get(key)??null,setItem:(key:string,value:string)=>memory.set(key,value),clear:()=>memory.clear()}});
+describe('private people storage',()=>{beforeEach(()=>localStorage.clear());it('creates and deletes a profile',()=>{peopleStore.save({id:'1',name:'M',relationship:'Crush',birthDate:'2000-01-01',birthTimeStatus:'unknown',birthplace:'Delhi'});expect(peopleStore.list()).toHaveLength(1);peopleStore.remove('1');expect(peopleStore.list()).toHaveLength(0)})});

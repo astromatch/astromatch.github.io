@@ -1,0 +1,2 @@
+export type Person={id:string;name:string;relationship:string;birthDate:string;birthTimeStatus:'exact'|'approximate'|'unknown';birthplace:string;notes?:string};
+export const peopleStore={list:():Person[]=>JSON.parse(localStorage.getItem('am:people')??'[]'),save:(person:Person)=>{const all=peopleStore.list();localStorage.setItem('am:people',JSON.stringify([...all.filter(x=>x.id!==person.id),person]))},remove:(id:string)=>localStorage.setItem('am:people',JSON.stringify(peopleStore.list().filter(x=>x.id!==id)))};

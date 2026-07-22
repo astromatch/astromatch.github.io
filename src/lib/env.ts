@@ -1,0 +1,3 @@
+import { z } from 'zod';
+const schema = z.object({ VITE_API_BASE_URL:z.string().url().default('https://api.astromatch.world'), VITE_FIREBASE_API_KEY:z.string().optional(), VITE_FIREBASE_AUTH_DOMAIN:z.string().optional(), VITE_FIREBASE_PROJECT_ID:z.string().optional(), VITE_FIREBASE_APP_ID:z.string().optional(), VITE_GA4_MEASUREMENT_ID:z.string().optional(), VITE_ENVIRONMENT:z.string().default('development'), VITE_ENABLE_ANALYTICS:z.enum(['true','false']).default('false'), VITE_ENABLE_DEV_FIXTURES:z.enum(['true','false']).default('false') });
+export const env=schema.parse(import.meta.env); export const firebaseReady=Boolean(env.VITE_FIREBASE_API_KEY&&env.VITE_FIREBASE_AUTH_DOMAIN&&env.VITE_FIREBASE_PROJECT_ID&&env.VITE_FIREBASE_APP_ID);

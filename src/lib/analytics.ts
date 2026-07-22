@@ -1,0 +1,6 @@
+import { env } from './env';
+export type EventName='sign_up_started'|'sign_up_completed'|'login_completed'|'logout_completed'|'onboarding_started'|'onboarding_step_viewed'|'birth_time_status_selected'|'onboarding_completed'|'person_creation_started'|'person_created'|'person_updated'|'person_deleted'|'match_creation_started'|'match_focus_selected'|'match_generation_requested'|'match_generation_completed'|'match_generation_failed'|'match_report_viewed'|'match_report_saved'|'share_card_generated'|'share_started'|'ask_screen_viewed'|'suggested_question_clicked'|'astrology_question_submitted'|'astrology_answer_completed'|'astrology_answer_failed'|'astrology_answer_feedback'|'primary_cta_clicked'|'pricing_interest_clicked'|'legal_page_viewed'|'page_view';
+type Params=Record<string,string|number|boolean|undefined>; declare global{interface Window{gtag?:(command:string,name:string,params?:Params)=>void}}
+const consent=()=>localStorage.getItem('am:analytics-consent')==='granted';
+export function track(name:EventName,params:Params={}){if(env.VITE_ENABLE_ANALYTICS!=='true'||!consent())return;window.gtag?.('event',name,params)}
+export function setAnalyticsConsent(value:boolean){localStorage.setItem('am:analytics-consent',value?'granted':'denied');window.gtag?.('consent','update',{'analytics_storage':value?'granted':'denied'} as Params)}

@@ -1,8 +1,9 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { Navigate, Route, Routes, Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowRight, Bookmark, Check, ChevronRight, Circle, Download, Heart, LockKeyhole, MessageCircle, Plus, Send, ShieldCheck, Sparkles, Trash2 } from 'lucide-react';
+import { ArrowRight, Bookmark, ChevronRight, Circle, Download, Heart, LockKeyhole, MessageCircle, Plus, Send, ShieldCheck, Sparkles, Trash2 } from 'lucide-react';
 import { AppShell, Brand, ButtonLink, Disclaimer, Page, PageTracker, PublicHeader } from './components';
 import { peopleStore, type Person } from './lib/storage'; import { auth } from './lib/firebase'; import { firebaseReady } from './lib/env'; import { track, setAnalyticsConsent } from './lib/analytics';
+import { accountApi, routeForAccount, type AccountState, type BirthProfileInput, type ProfileInput } from './lib/account';
 
 const benefits=[['Private by design','Create personal profiles for the people in your life. Nothing becomes public.'],['More than a score','Explore attraction, communication, conflict and emotional rhythm in context.'],['Questions that go deeper','Ask about a connection or your own patterns—and get grounded reflections.']];
 function Landing(){return <div className="public-page"><PublicHeader/><main><section className="hero"><div className="hero-copy"><p className="eyebrow">ASTROLOGY FOR REAL RELATIONSHIPS</p><h1>Understand the patterns <em>between you.</em></h1><p className="lead">Create private birth profiles, explore compatibility and ask personal questions about love, dating and connection.</p><div className="actions"><ButtonLink to="/signup">Create my profile <ArrowRight size={18}/></ButtonLink><a href="#how" className="quiet-link">See how it works</a></div><p className="micro"><LockKeyhole size={14}/> Your profiles are private and never discoverable.</p></div><CompatibilityPreview/></section><section className="manifesto"><p>Love is complicated.</p><h2>Your patterns don’t have to be.</h2></section><section className="benefit-grid">{benefits.map(([title,text],i)=><article key={title}><span>0{i+1}</span><h3>{title}</h3><p>{text}</p></article>)}</section><section id="how" className="how"><p className="eyebrow">HOW IT WORKS</p><h2>Two charts. One thoughtful conversation.</h2><div className="steps"><div><b>01</b><h3>Create your birth profile</h3><p>Tell us what you know. An unknown birth time is okay—we’ll explain what changes.</p></div><div><b>02</b><h3>Add someone privately</h3><p>A partner, crush, ex or friend. They are never notified or listed publicly.</p></div><div><b>03</b><h3>Explore the connection</h3><p>Read a nuanced report, then ask the questions that are actually on your mind.</p></div></div></section><section className="questions"><p className="eyebrow">QUESTIONS WORTH ASKING</p>{['What creates the strongest attraction between us?','Where might our communication break down?','What should I understand before committing?'].map(q=><p key={q}>{q}<ArrowRight/></p>)}</section><section className="privacy-callout"><ShieldCheck/><div><p className="eyebrow">PRIVATE MEANS PRIVATE</p><h2>Your love life isn’t content.</h2><p>Profiles you create are visible only to you. Share cards hide birth details and use aliases by default.</p></div></section><section className="final-cta"><p className="eyebrow">A DIFFERENT WAY TO REFLECT</p><h2>Start with what’s written in the sky. Keep the choice in your hands.</h2><ButtonLink to="/signup">Create my profile <ArrowRight size={18}/></ButtonLink></section></main><Footer/></div>}
@@ -36,7 +37,8 @@ function AuthPage({signup=false}:{signup?:boolean}){
         :await signInWithEmailAndPassword(auth,String(form.get('email')),String(form.get('password')));
       if(signup)await sendEmailVerification(credential.user);
       track(signup?'sign_up_completed':'login_completed',{method:'email'});
-      nav(signup?'/onboarding':'/home');
+      const account=await accountApi.get();
+      nav(routeForAccount(account));
     }catch(error){
       setMessage(authErrorMessage(error));
     }finally{
@@ -55,7 +57,8 @@ function AuthPage({signup=false}:{signup?:boolean}){
       const credential=await signInWithPopup(auth,provider);
       const isNewUser=getAdditionalUserInfo(credential)?.isNewUser??false;
       track(isNewUser?'sign_up_completed':'login_completed',{method:'google'});
-      nav(isNewUser?'/onboarding':'/home');
+      const account=await accountApi.get();
+      nav(routeForAccount(account));
     }catch(error){
       setMessage(authErrorMessage(error));
     }finally{
@@ -76,5 +79,90 @@ function Ask(){const prompts=['Why do I lose interest once someone likes me?','W
 function Saved(){return <AppShell><Page eyebrow="YOUR LIBRARY" title="Saved"/><div className="tabs"><button className="active">Reports</button><button>Conversations</button><button>Share cards</button></div><Empty icon={<Bookmark/>} title="Keep the useful parts close" text="Reports and conversations you save will live here." action="Explore a match" to="/matches"/></AppShell>}
 function Profile(){return <AppShell><Page eyebrow="YOUR CHART" title="Deepak" action={<Link to="/settings">Settings</Link>}/><div className="profile-orbit"><div><small>SUN</small><strong>Leo</strong></div><div><small>MOON</small><strong>Pisces</strong></div><div><small>RISING</small><strong>Libra</strong></div></div><section className="detail-card"><p className="eyebrow">BIRTH DETAILS</p><dl><div><dt>Date</dt><dd>Not connected</dd></div><div><dt>Time quality</dt><dd>Unknown</dd></div><div><dt>Place</dt><dd>Not connected</dd></div><div><dt>Calculation</dt><dd>Awaiting API</dd></div></dl><ButtonLink to="/onboarding/birth-details" secondary>Edit birth profile</ButtonLink></section><p className="fixture-note">Placements above are illustrative until the chart API is connected.</p></AppShell>}
 function Settings(){const [consent,setConsent]=useState(localStorage.getItem('am:analytics-consent')==='granted');return <AppShell><Page eyebrow="PREFERENCES" title="Settings"/><div className="settings-list"><section><h2>Privacy</h2><label className="toggle">Anonymous product analytics<input type="checkbox" checked={consent} onChange={e=>{setConsent(e.target.checked);setAnalyticsConsent(e.target.checked)}}/><i/></label><p>Never includes names, email, birth data, locations or question text.</p></section><section><h2>Account</h2><button>Export my data <span>Coming soon</span></button><button>Notifications <span>Coming soon</span></button><button onClick={async()=>{await auth?.signOut();track('logout_completed')}}>Log out</button><button className="danger">Delete account</button></section><section><h2>Legal</h2><Link to="/privacy">Privacy policy <ChevronRight/></Link><Link to="/terms">Terms of use <ChevronRight/></Link></section></div></AppShell>}
-function Onboarding(){const nav=useNavigate();const path=location.hash;const birth=path.includes('birth-details');const prefs=path.includes('preferences');const complete=path.includes('complete');function next(e?:FormEvent){e?.preventDefault();nav(birth?'/onboarding/preferences':prefs?'/onboarding/complete':'/onboarding/birth-details')}return <div className="onboarding"><header><Brand/><span>{complete?'DONE':birth?'02 / 03':prefs?'03 / 03':'01 / 03'}</span></header><main>{complete?<><div className="complete-mark"><Check/></div><p className="eyebrow">YOUR SPACE IS READY</p><h1>A clearer way to look at connection.</h1><p className="lead">Your private profile is ready. Start with today’s reflection or add someone you’d like to understand.</p><ButtonLink to="/home">Enter AstroMatch <ArrowRight/></ButtonLink></>:<><p className="eyebrow">{birth?'YOUR BIRTH CHART':prefs?'YOUR INTENTIONS':'LET’S BEGIN'}</p><h1>{birth?'The details the sky remembers.':prefs?'What brings you here?':'Make this space yours.'}</h1><form className="stack-form" onSubmit={next}>{!birth&&!prefs&&<><label>What should we call you?<input required placeholder="Your display name"/></label><label>Pronouns <span>optional</span><input placeholder="e.g. they/them"/></label></>}{birth&&<><label>Date of birth<input type="date" required/></label><fieldset><legend>How well do you know your birth time?</legend><div className="radio-stack">{['Exact time','Approximate time','Birth time unknown'].map((x,i)=><label key={x}><input type="radio" name="time" defaultChecked={!i}/><span>{x}</span></label>)}</div><small>An unknown time may reduce precision for your houses and ascendant.</small></fieldset><label>Birthplace<input required placeholder="City, country"/></label><label>Timezone<input required placeholder="e.g. Asia/Kolkata"/></label></>}{prefs&&<><fieldset><legend>Primary interest</legend><div className="radio-stack">{['Dating','Relationship','Compatibility','Marriage','Self-understanding'].map((x,i)=><label key={x}><input type="radio" name="interest" defaultChecked={!i}/><span>{x}</span></label>)}</div></fieldset><label>Relationship status <span>optional</span><select><option>Prefer not to say</option><option>Single</option><option>Dating</option><option>In a relationship</option><option>Married</option></select></label><label className="consent"><input type="checkbox" required/> I understand AstroMatch offers interpretations for reflection and entertainment.</label></>}<button className="button">Continue <ArrowRight/></button></form></>}</main></div>}
+function Onboarding(){
+  const nav=useNavigate();
+  const [account,setAccount]=useState<AccountState|null>(null);
+  const [loading,setLoading]=useState(true);
+  const [message,setMessage]=useState('');
+
+  useEffect(()=>{
+    let active=true;
+    accountApi.get()
+      .then(current=>{
+        if(!active)return;
+        if(current.onboarding_completed){nav('/home',{replace:true});return}
+        setAccount(current);
+      })
+      .catch(()=>active&&setMessage('We couldn’t load your account. Please sign in again.'))
+      .finally(()=>active&&setLoading(false));
+    return()=>{active=false};
+  },[nav]);
+
+  async function refreshAccount(){
+    const current=await accountApi.get();
+    setAccount(current);
+    const route=routeForAccount(current);
+    if(route==='/home')track('onboarding_completed');
+    nav(route,{replace:true});
+  }
+
+  async function submitProfile(e:FormEvent<HTMLFormElement>){
+    e.preventDefault();
+    setLoading(true);
+    setMessage('');
+    const form=new FormData(e.currentTarget);
+    const profile:ProfileInput={
+      preferred_name:String(form.get('preferred_name')).trim(),
+      date_of_birth:String(form.get('date_of_birth')),
+      country_code:String(form.get('country_code')).trim().toUpperCase(),
+      timezone:String(form.get('timezone')).trim(),
+      locale:String(form.get('locale')).trim(),
+    };
+    try{
+      await accountApi.updateProfile(profile);
+      await accountApi.completeProfile();
+      await refreshAccount();
+    }catch{
+      setMessage('We couldn’t save your profile. Check each field and try again.');
+    }finally{
+      setLoading(false);
+    }
+  }
+
+  async function submitBirthProfile(e:FormEvent<HTMLFormElement>){
+    e.preventDefault();
+    setLoading(true);
+    setMessage('');
+    const form=new FormData(e.currentTarget);
+    const timeStatus=String(form.get('birth_time_status')) as BirthProfileInput['birth_time_status'];
+    const time=String(form.get('birth_time'));
+    const birthProfile:BirthProfileInput={
+      display_name:String(form.get('display_name')).trim(),
+      pronouns:String(form.get('pronouns')).trim()||null,
+      birth_date:String(form.get('birth_date')),
+      birth_time:timeStatus==='unknown'||!time?null:time,
+      birth_time_status:timeStatus,
+      birth_time_accuracy_minutes:timeStatus==='approximate'?Number(form.get('birth_time_accuracy_minutes')):null,
+      birth_place_label:String(form.get('birth_place_label')).trim(),
+      latitude:Number(form.get('latitude')),
+      longitude:Number(form.get('longitude')),
+      timezone:String(form.get('timezone')).trim(),
+      astrology_system:'western_tropical',
+    };
+    try{
+      await accountApi.createBirthProfile(birthProfile);
+      await refreshAccount();
+    }catch{
+      setMessage('We couldn’t create your birth profile. Check the place, coordinates, and time details.');
+    }finally{
+      setLoading(false);
+    }
+  }
+
+  if(loading&&!account)return <div className="onboarding"><header><Brand/><span>SYNCING</span></header><main><p role="status">Preparing your private account…</p></main></div>;
+  const birthStep=account?.next_step==='create_birth_profile'||account?.profile_status==='profile_complete';
+  const profile=account?.user_profile;
+
+  return <div className="onboarding"><header><Brand/><span>{birthStep?'02 / 02':'01 / 02'}</span></header><main><p className="eyebrow">{birthStep?'YOUR BIRTH CHART':'LET’S BEGIN'}</p><h1>{birthStep?'The details the sky remembers.':'Make this space yours.'}</h1>{message&&<p role="alert" className="form-message">{message}</p>}{birthStep?<form className="stack-form" onSubmit={submitBirthProfile}><label>Profile name<input name="display_name" defaultValue={profile?.preferred_name??profile?.first_name??''} required/></label><label>Pronouns <span>optional</span><input name="pronouns" placeholder="e.g. they/them"/></label><label>Date of birth<input name="birth_date" type="date" defaultValue={profile?.date_of_birth??''} required/></label><fieldset><legend>How well do you know your birth time?</legend><div className="radio-stack">{[['exact','Exact time'],['approximate','Approximate time'],['unknown','Birth time unknown']].map(([value,label],i)=><label key={value}><input type="radio" name="birth_time_status" value={value} defaultChecked={!i}/><span>{label}</span></label>)}</div></fieldset><label>Birth time<input name="birth_time" type="time"/></label><label>Approximation range in minutes<input name="birth_time_accuracy_minutes" type="number" min="0" max="720" defaultValue="30"/></label><label>Birthplace<input name="birth_place_label" required placeholder="City, country"/></label><div className="choice-row"><label>Latitude<input name="latitude" type="number" min="-90" max="90" step="any" required/></label><label>Longitude<input name="longitude" type="number" min="-180" max="180" step="any" required/></label></div><label>Timezone<input name="timezone" defaultValue={profile?.timezone??Intl.DateTimeFormat().resolvedOptions().timeZone} required placeholder="e.g. Asia/Kolkata"/></label><button className="button" disabled={loading}>{loading?'Saving…':'Complete setup'} <ArrowRight/></button></form>:<form className="stack-form" onSubmit={submitProfile}><label>What should we call you?<input name="preferred_name" defaultValue={profile?.preferred_name??''} required/></label><label>Date of birth<input name="date_of_birth" type="date" defaultValue={profile?.date_of_birth??''} required/></label><label>Country code<input name="country_code" defaultValue={profile?.country_code??''} minLength={2} maxLength={2} required placeholder="e.g. IN"/></label><label>Timezone<input name="timezone" defaultValue={profile?.timezone??Intl.DateTimeFormat().resolvedOptions().timeZone} required placeholder="e.g. Asia/Kolkata"/></label><label>Locale<input name="locale" defaultValue={profile?.locale??navigator.language} required placeholder="e.g. en-IN"/></label><button className="button" disabled={loading}>{loading?'Saving…':'Continue'} <ArrowRight/></button></form>}</main></div>
+}
 export function App(){return <><PageTracker/><Routes><Route path="/" element={<Landing/>}/><Route path="/about" element={<Legal kind="about"/>}/><Route path="/privacy" element={<Legal kind="privacy"/>}/><Route path="/terms" element={<Legal kind="terms"/>}/><Route path="/login" element={<AuthPage/>}/><Route path="/signup" element={<AuthPage signup/>}/><Route path="/onboarding/*" element={<Onboarding/>}/><Route path="/home" element={<Dashboard/>}/><Route path="/ask" element={<Ask/>}/><Route path="/matches" element={<Matches/>}/><Route path="/matches/new" element={<NewMatch/>}/><Route path="/matches/:matchId" element={<Report/>}/><Route path="/matches/:matchId/report" element={<Report/>}/><Route path="/people" element={<People/>}/><Route path="/people/new" element={<PersonForm/>}/><Route path="/people/:personId" element={<PersonForm/>}/><Route path="/saved" element={<Saved/>}/><Route path="/profile" element={<Profile/>}/><Route path="/settings" element={<Settings/>}/><Route path="*" element={<Navigate to="/" replace/>}/></Routes></>}

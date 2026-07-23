@@ -38,20 +38,6 @@ export interface ProfileInput {
   bio?: string | null;
 }
 
-export interface BirthProfileInput {
-  displayName: string;
-  pronouns?: string | null;
-  birthDate: string;
-  birthTime?: string | null;
-  birthTimeStatus: 'exact' | 'approximate' | 'unknown';
-  birthTimeAccuracyMinutes?: number | null;
-  birthPlaceLabel: string;
-  latitude: number;
-  longitude: number;
-  timezone: string;
-  astrologySystem: 'western_tropical';
-}
-
 export const accountApi = {
   get: () => api<AccountState>('/api/v1/me'),
   updateProfile: (profile: ProfileInput) => api<AccountState>('/api/v1/me/profile', {
@@ -59,10 +45,6 @@ export const accountApi = {
     body: JSON.stringify(profile),
   }),
   completeProfile: (profile: ProfileInput) => api<AccountState>('/api/v1/me/profile/complete', {
-    method: 'POST',
-    body: JSON.stringify(profile),
-  }),
-  createBirthProfile: (profile: BirthProfileInput) => api('/api/v1/me/birth-profile', {
     method: 'POST',
     body: JSON.stringify(profile),
   }),

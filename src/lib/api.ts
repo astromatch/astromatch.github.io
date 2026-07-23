@@ -14,30 +14,52 @@ export function requestHeaders(options:RequestInit,token:string|undefined,reques
 }
 
 export async function api<T>(path:string,options:RequestInit={}){
-  const token=await auth?.currentUser?.getIdToken();
   const requestId=crypto.randomUUID();
-  try{
-    const response=await fetch(`${env.VITE_API_BASE_URL}${path}`,{
-      ...options,
-      headers:requestHeaders(options,token,requestId),
-    });
-    const body=await response.json().catch(()=>({}));
-    if(!response.ok){
-      const error=body?.error;
-      throw new ApiError(
-        codes[response.status]??(response.status>=500?'SERVER_ERROR':'VALIDATION_ERROR'),
-        error?.message??friendly(response.status),
-        response.status,
-        error?.fields,
-        body?.meta?.requestId??requestId,
-      );
+  const isGet=(options.method??'GET').toUpperCase()==='GET';
+  const maxAttempts=isGet?3:1;
+  let forceTokenRefresh=false;
+  for(let attempt=0;attempt<maxAttempts;attempt++){
+    const token=await auth?.currentUser?.getIdToken(forceTokenRefresh);
+    try{
+      const response=await fetch(`${env.VITE_API_BASE_URL}${path}`,{
+        ...options,
+        headers:requestHeaders(options,token,requestId),
+      });
+      if(response.status===401&&!forceTokenRefresh&&auth?.currentUser){
+        forceTokenRefresh=true;
+        attempt--;
+        continue;
+      }
+      const body=await response.json().catch(()=>({}));
+      if(!response.ok){
+        const error=body?.error;
+        const apiError=new ApiError(
+          codes[response.status]??(response.status>=500?'SERVER_ERROR':'VALIDATION_ERROR'),
+          error?.message??friendly(response.status),
+          response.status,
+          error?.fields,
+          body?.meta?.requestId??requestId,
+        );
+        if(isGet&&(response.status===500||response.status===503)&&attempt<maxAttempts-1){
+          await retryDelay(attempt);
+          continue;
+        }
+        throw apiError;
+      }
+      return (body?.data??body) as T;
+    }catch(error){
+      if(error instanceof ApiError)throw error;
+      if((error as Error).name==='AbortError')throw error;
+      if(isGet&&attempt<maxAttempts-1){
+        await retryDelay(attempt);
+        continue;
+      }
+      throw new ApiError('NETWORK_ERROR','AstroMatch could not connect. Please try again.',0);
     }
-    return (body?.data??body) as T;
-  }catch(error){
-    if(error instanceof ApiError)throw error;
-    if((error as Error).name==='AbortError')throw error;
-    throw new ApiError('NETWORK_ERROR','AstroMatch could not connect. Please try again.',0);
   }
+  throw new ApiError('NETWORK_ERROR','AstroMatch could not connect. Please try again.',0);
 }
+
+const retryDelay=(attempt:number)=>new Promise(resolve=>setTimeout(resolve,250*(2**attempt)));
 
 function friendly(status:number){if(status===401)return 'Your session has expired. Please sign in again.';if(status===429)return 'You’ve reached the current limit. Please try again later.';if(status>=500)return 'AstroMatch is having a quiet moment. Please try again.';return 'We could not complete that request.'}

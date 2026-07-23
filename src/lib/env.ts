@@ -5,6 +5,7 @@ const booleanFlag = z.preprocess(emptyToUndefined, z.enum(['true','false']).defa
 
 const schema = z.object({
   VITE_API_BASE_URL: z.preprocess(emptyToUndefined, z.string().url().default('https://astromatch-api-k996.onrender.com')),
+  VITE_GEOCODING_BASE_URL: z.preprocess(emptyToUndefined, z.string().url().default('https://nominatim.openstreetmap.org')),
   VITE_FIREBASE_API_KEY: z.preprocess(emptyToUndefined, z.string().default('AIzaSyDNIwjVMF1cwR8yVOlOT4aucXtOlhhUzzk')),
   VITE_FIREBASE_AUTH_DOMAIN: z.preprocess(emptyToUndefined, z.string().default('astromatch-abaa9.firebaseapp.com')),
   VITE_FIREBASE_PROJECT_ID: z.preprocess(emptyToUndefined, z.string().default('astromatch-abaa9')),

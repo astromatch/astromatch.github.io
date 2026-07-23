@@ -5,6 +5,8 @@ export interface PlaceResult {
   label: string;
   latitude: number;
   longitude: number;
+  city: string;
+  country: string;
 }
 
 interface NominatimResult {
@@ -12,6 +14,13 @@ interface NominatimResult {
   display_name: string;
   lat: string;
   lon: string;
+  address?: {
+    city?:string;
+    town?:string;
+    village?:string;
+    municipality?:string;
+    country_code?:string;
+  };
 }
 
 const cache=new Map<string,PlaceResult[]>();
@@ -22,7 +31,7 @@ export async function searchPlaces(query:string,signal?:AbortSignal):Promise<Pla
   const cacheKey=normalized.toLocaleLowerCase();
   const cached=cache.get(cacheKey);
   if(cached)return cached;
-  const params=new URLSearchParams({q:normalized,format:'jsonv2',limit:'6',featuretype:'settlement'});
+  const params=new URLSearchParams({q:normalized,format:'jsonv2',limit:'6',featuretype:'settlement',addressdetails:'1'});
   const response=await fetch(`${env.VITE_GEOCODING_BASE_URL}/search?${params}`,{
     headers:{Accept:'application/json'},
     signal,
@@ -34,6 +43,8 @@ export async function searchPlaces(query:string,signal?:AbortSignal):Promise<Pla
     label:place.display_name,
     latitude:Number(place.lat),
     longitude:Number(place.lon),
+    city:place.address?.city??place.address?.town??place.address?.village??place.address?.municipality??place.display_name.split(',')[0],
+    country:(place.address?.country_code??'').toUpperCase(),
   }));
   cache.set(cacheKey,results);
   return results;

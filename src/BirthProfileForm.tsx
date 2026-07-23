@@ -43,7 +43,7 @@ export function BirthProfileForm({loading,profile,onSubmit}:Props){
 
   return <form className="stack-form" onSubmit={onSubmit}>
     <label>Profile name<input name="display_name" defaultValue={profile?.preferred_name??profile?.first_name??''} required/></label>
-    <label>Pronouns <span>optional</span><input name="pronouns" defaultValue={profile?.pronouns??''} placeholder="e.g. they/them"/></label>
+    <label>Relationship<select name="relationship_type" defaultValue="self" required><option value="self">Self</option><option value="partner">Partner</option><option value="spouse">Spouse</option><option value="crush">Crush</option><option value="ex">Ex</option><option value="friend">Friend</option><option value="custom">Other</option></select></label>
     <label>Date of birth<input name="birth_date" type="date" defaultValue={profile?.date_of_birth??''} required/></label>
     <fieldset><legend>How accurate is your birth time?</legend><div className="radio-stack">
       <label><input type="radio" name="birth_time_status" value="exact" checked={timeStatus==='exact'} onChange={()=>setTimeStatus('exact')}/><span><b>Exact</b><small>Recorded precisely, such as from a birth certificate.</small></span></label>
@@ -63,9 +63,12 @@ export function BirthProfileForm({loading,profile,onSubmit}:Props){
       <input type="hidden" name="birth_place_label" value={selectedPlace?.label??''}/>
       <input type="hidden" name="latitude" value={selectedPlace?.latitude??''}/>
       <input type="hidden" name="longitude" value={selectedPlace?.longitude??''}/>
+      <input type="hidden" name="city" value={selectedPlace?.city??''}/>
+      <input type="hidden" name="country" value={selectedPlace?.country??''}/>
     </fieldset>
     <label>Timezone<input name="timezone" list="timezone-options" defaultValue={profile?.timezone??Intl.DateTimeFormat().resolvedOptions().timeZone} required placeholder="Search timezone"/></label>
     <datalist id="timezone-options">{timezones.map(timezone=><option key={timezone} value={timezone}/>)}</datalist>
+    <label>Notes <span>optional</span><textarea name="notes" maxLength={2000}/></label>
     <button className="button" disabled={loading||!selectedPlace}>{loading?'Saving…':'Complete setup'} <ArrowRight/></button>
   </form>;
 }

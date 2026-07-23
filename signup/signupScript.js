@@ -12,7 +12,7 @@ function signupUser() {
     var errorMessage = document.getElementById("errorMessage");
 
     // Make an AJAX request to sign up the user using the provided endpoint
-    fetch("http://ec2-15-206-93-175.ap-south-1.compute.amazonaws.com:8080/signup", {
+    fetch("https://astromatch-api-k996.onrender.com/signup", {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
@@ -52,7 +52,7 @@ function verifyOtp() {
     var errorMessage = document.getElementById("errorMessage");
 
     // Make an AJAX request to verify the user with the provided OTP and stored email
-    fetch("http://ec2-15-206-93-175.ap-south-1.compute.amazonaws.com:8080/verifyuser", {
+    fetch("https://astromatch-api-k996.onrender.com/verifyuser", {
         method: "POST",
         headers: {
             "Content-Type": "application/json",

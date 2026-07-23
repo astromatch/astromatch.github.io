@@ -9,7 +9,62 @@ function Landing(){return <div className="public-page"><PublicHeader/><main><sec
 function CompatibilityPreview(){return <div className="preview"><div className="orbit"><span className="node one">A</span><span className="node two">M</span><div className="score"><small>COMPATIBILITY</small><strong>82</strong><span>/ 100</span></div></div><div className="preview-foot"><span><i/> Magnetic honesty</span><span><i/> Different rhythms</span></div></div>}
 function Footer(){return <footer><Brand/><p>Private, personalized astrology for your love life.</p><nav><Link to="/about">About</Link><Link to="/privacy">Privacy</Link><Link to="/terms">Terms</Link></nav><small>© 2026 AstroMatch</small></footer>}
 function Legal({kind}:{kind:'about'|'privacy'|'terms'}){const copy={about:['Astrology for the space between people.','AstroMatch is a private reflection tool for understanding attraction, communication and emotional patterns—without turning people into profiles for public consumption.'],privacy:['Privacy, in plain language.','Your birth profiles and conversations are private account data. We do not sell personal information or use birth details, names, locations, emails or question text for analytics.'],terms:['A thoughtful tool, not a certainty machine.','Use AstroMatch for personal reflection and entertainment. Interpretations are tendencies, not guarantees, and should never replace your judgment or professional advice.']}[kind];return <div className="public-page"><PublicHeader/><main className="prose"><p className="eyebrow">{kind.toUpperCase()}</p><h1>{copy[0]}</h1><p className="lead">{copy[1]}</p><Disclaimer/></main><Footer/></div>}
-function AuthPage({signup=false}:{signup?:boolean}){const nav=useNavigate();const [loading,setLoading]=useState(false);const [message,setMessage]=useState('');async function submit(e:FormEvent<HTMLFormElement>){e.preventDefault();if(!auth){setMessage('Firebase sign-in is not configured yet. Add the values from .env.example.');return}setLoading(true);const form=new FormData(e.currentTarget);try{const {createUserWithEmailAndPassword,signInWithEmailAndPassword,sendEmailVerification}=await import('firebase/auth');const credential=signup?await createUserWithEmailAndPassword(auth,String(form.get('email')),String(form.get('password'))):await signInWithEmailAndPassword(auth,String(form.get('email')),String(form.get('password')));if(signup)await sendEmailVerification(credential.user);track(signup?'sign_up_completed':'login_completed',{method:'email'});nav(signup?'/onboarding':'/home')}catch{setMessage('We couldn’t complete that request. Check your details or try again shortly.')}finally{setLoading(false)}}return <div className="auth-page"><header><Brand/><Link to={signup?'/login':'/signup'}>{signup?'Sign in':'Create account'}</Link></header><main><p className="eyebrow">{signup?'BEGIN YOUR PROFILE':'WELCOME BACK'}</p><h1>{signup?'A little about you, then the stars.':'Return to your private space.'}</h1><form onSubmit={submit}><label>Email<input name="email" type="email" autoComplete="email" required/></label><label>Password<input name="password" type="password" minLength={8} autoComplete={signup?'new-password':'current-password'} required/><small>Use at least 8 characters.</small></label>{message&&<p role="alert" className="form-message">{message}</p>}<button className="button" disabled={loading}>{loading?'One moment…':signup?'Create account':'Sign in'} <ArrowRight size={18}/></button></form><button className="google" disabled={!firebaseReady}>Continue with Google</button><p className="micro">By continuing, you agree to our <Link to="/terms">Terms</Link> and acknowledge our <Link to="/privacy">Privacy Policy</Link>.</p></main></div>}
+function AuthPage({signup=false}:{signup?:boolean}){
+  const nav=useNavigate();
+  const [loading,setLoading]=useState(false);
+  const [message,setMessage]=useState('');
+
+  function authErrorMessage(error:unknown){
+    const code=typeof error==='object'&&error!==null&&'code' in error?String(error.code):'';
+    if(code==='auth/popup-closed-by-user'||code==='auth/cancelled-popup-request')return '';
+    if(code==='auth/popup-blocked')return 'Your browser blocked the Google sign-in window. Allow pop-ups and try again.';
+    if(code==='auth/unauthorized-domain')return 'Google sign-in is not authorized for this website yet.';
+    if(code==='auth/operation-not-allowed')return 'Google sign-in is not enabled for this Firebase project yet.';
+    return 'We couldn’t complete that request. Check your details or try again shortly.';
+  }
+
+  async function submit(e:FormEvent<HTMLFormElement>){
+    e.preventDefault();
+    if(!auth){setMessage('Firebase sign-in is not configured yet.');return}
+    setLoading(true);
+    setMessage('');
+    const form=new FormData(e.currentTarget);
+    try{
+      const {createUserWithEmailAndPassword,signInWithEmailAndPassword,sendEmailVerification}=await import('firebase/auth');
+      const credential=signup
+        ?await createUserWithEmailAndPassword(auth,String(form.get('email')),String(form.get('password')))
+        :await signInWithEmailAndPassword(auth,String(form.get('email')),String(form.get('password')));
+      if(signup)await sendEmailVerification(credential.user);
+      track(signup?'sign_up_completed':'login_completed',{method:'email'});
+      nav(signup?'/onboarding':'/home');
+    }catch(error){
+      setMessage(authErrorMessage(error));
+    }finally{
+      setLoading(false);
+    }
+  }
+
+  async function continueWithGoogle(){
+    if(!auth){setMessage('Firebase sign-in is not configured yet.');return}
+    setLoading(true);
+    setMessage('');
+    try{
+      const {GoogleAuthProvider,getAdditionalUserInfo,signInWithPopup}=await import('firebase/auth');
+      const provider=new GoogleAuthProvider();
+      provider.setCustomParameters({prompt:'select_account'});
+      const credential=await signInWithPopup(auth,provider);
+      const isNewUser=getAdditionalUserInfo(credential)?.isNewUser??false;
+      track(isNewUser?'sign_up_completed':'login_completed',{method:'google'});
+      nav(isNewUser?'/onboarding':'/home');
+    }catch(error){
+      setMessage(authErrorMessage(error));
+    }finally{
+      setLoading(false);
+    }
+  }
+
+  return <div className="auth-page"><header><Brand/><Link to={signup?'/login':'/signup'}>{signup?'Sign in':'Create account'}</Link></header><main><p className="eyebrow">{signup?'BEGIN YOUR PROFILE':'WELCOME BACK'}</p><h1>{signup?'A little about you, then the stars.':'Return to your private space.'}</h1><form onSubmit={submit}><label>Email<input name="email" type="email" autoComplete="email" required/></label><label>Password<input name="password" type="password" minLength={8} autoComplete={signup?'new-password':'current-password'} required/><small>Use at least 8 characters.</small></label>{message&&<p role="alert" className="form-message">{message}</p>}<button className="button" disabled={loading}>{loading?'One moment…':signup?'Create account':'Sign in'} <ArrowRight size={18}/></button></form><button type="button" className="google" onClick={continueWithGoogle} disabled={!firebaseReady||loading}>{loading?'One moment…':'Continue with Google'}</button><p className="micro">By continuing, you agree to our <Link to="/terms">Terms</Link> and acknowledge our <Link to="/privacy">Privacy Policy</Link>.</p></main></div>
+}
 function Dashboard(){return <AppShell><Page eyebrow="THURSDAY · JULY 23" title="Good evening, Deepak."/><section className="daily"><span className="eyebrow">YOUR RELATIONSHIP WEATHER</span><h2>Say the true thing gently.</h2><p>Connection grows when honesty arrives without a demand for an immediate answer. Leave a little room around what you mean.</p><div className="tags"><span>Venus · expression</span><span>Moon · sensitivity</span></div></section><div className="dash-grid"><Link className="action-card" to="/ask"><MessageCircle/><div><span>ASK ASTROMATCH</span><h3>What’s on your mind?</h3></div><ChevronRight/></Link><Link className="action-card" to="/matches/new"><Heart/><div><span>NEW CONNECTION</span><h3>Explore a match</h3></div><ChevronRight/></Link></div><section className="section"><div className="section-head"><p className="eyebrow">LATEST MATCH</p><Link to="/matches">View all</Link></div><Link to="/matches/demo/report" className="match-card"><div><span>A</span><span>M</span></div><section><small>YOU + MAYA</small><h3>A bond built on candor</h3><p>Strong emotional recognition · Different pacing</p></section><strong>82</strong></Link></section><p className="fixture-note">Preview content is illustrative until your API is connected.</p></AppShell>}
 function People(){const [people,setPeople]=useState<Person[]>(peopleStore.list());function remove(id:string){if(confirm('Delete this private profile?')){peopleStore.remove(id);setPeople(peopleStore.list());track('person_deleted')}}return <AppShell><Page eyebrow="PRIVATE PROFILES" title="People" action={<Link className="icon-button" to="/people/new" aria-label="Add a person"><Plus/></Link>}/><p className="page-intro">The people you add are never notified and never appear publicly.</p>{people.length?<div className="list">{people.map(p=><article className="list-row" key={p.id}><Link to={`/people/${p.id}`}><span className="avatar">{p.name[0]}</span><div><h3>{p.name}</h3><p>{p.relationship} · {p.birthplace}</p></div></Link><button onClick={()=>remove(p.id)} aria-label={`Delete ${p.name}`}><Trash2/></button></article>)}</div>:<Empty icon={<Heart/>} title="No one here yet" text="Add someone privately when there’s a connection you want to understand." action="Add a person" to="/people/new"/>}</AppShell>}
 function PersonForm(){const {personId}=useParams();const existing=peopleStore.list().find(p=>p.id===personId);const nav=useNavigate();function submit(e:FormEvent<HTMLFormElement>){e.preventDefault();const f=new FormData(e.currentTarget);peopleStore.save({id:existing?.id??crypto.randomUUID(),name:String(f.get('name')),relationship:String(f.get('relationship')),birthDate:String(f.get('birthDate')),birthTimeStatus:String(f.get('birthTimeStatus')) as Person['birthTimeStatus'],birthplace:String(f.get('birthplace')),notes:String(f.get('notes'))});track(existing?'person_updated':'person_created',{relationship_type:String(f.get('relationship')),birth_time_quality:String(f.get('birthTimeStatus'))});nav('/people')}return <AppShell><Page eyebrow={existing?'EDIT PROFILE':'ADD SOMEONE'} title={existing?existing.name:'Who are we looking at?'}/><form className="stack-form" onSubmit={submit}><label>Private name or alias<input name="name" defaultValue={existing?.name} required/></label><label>Relationship<select name="relationship" defaultValue={existing?.relationship}><option>Partner</option><option>Crush</option><option>Ex</option><option>Friend</option><option>Custom</option></select></label><label>Date of birth<input name="birthDate" type="date" defaultValue={existing?.birthDate} required/></label><fieldset><legend>Birth time</legend><div className="choice-row">{['exact','approximate','unknown'].map(x=><label key={x}><input type="radio" name="birthTimeStatus" value={x} defaultChecked={(existing?.birthTimeStatus??'unknown')===x}/>{x}</label>)}</div><small>Without an exact time, house and ascendant interpretations may be less precise.</small></fieldset><label>Birthplace<input name="birthplace" defaultValue={existing?.birthplace} placeholder="City, country" required/><small>Manual entry for now. Confirm the normalized place when lookup is connected.</small></label><label>Notes <span>optional</span><textarea name="notes" defaultValue={existing?.notes}/></label><div className="notice"><LockKeyhole/>This person is not notified. Avoid sensitive information without their permission.</div><button className="button">Save private profile</button></form></AppShell>}

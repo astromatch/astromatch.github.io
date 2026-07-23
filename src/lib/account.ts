@@ -7,37 +7,49 @@ export interface AccountState {
   profile_status: 'incomplete' | 'profile_complete' | 'complete';
   onboarding_completed: boolean;
   next_step: NextOnboardingStep;
-  user_profile?: {
+  profile?: {
     first_name?: string | null;
+    last_name?: string | null;
     preferred_name?: string | null;
+    gender?: string | null;
+    pronouns?: string | null;
     date_of_birth?: string | null;
+    relationship_status?: string | null;
+    looking_for?: string | null;
     country_code?: string | null;
     timezone?: string | null;
     locale?: string | null;
+    bio?: string | null;
   } | null;
 }
 
 export interface ProfileInput {
-  first_name?: string;
-  preferred_name?: string;
+  first_name?: string | null;
+  last_name?: string | null;
+  preferred_name?: string | null;
+  gender?: string | null;
+  pronouns?: string | null;
   date_of_birth: string;
+  relationship_status?: string | null;
+  looking_for?: string | null;
   country_code: string;
   timezone: string;
   locale: string;
+  bio?: string | null;
 }
 
 export interface BirthProfileInput {
-  display_name: string;
+  displayName: string;
   pronouns?: string | null;
-  birth_date: string;
-  birth_time?: string | null;
-  birth_time_status: 'exact' | 'approximate' | 'unknown';
-  birth_time_accuracy_minutes?: number | null;
-  birth_place_label: string;
+  birthDate: string;
+  birthTime?: string | null;
+  birthTimeStatus: 'exact' | 'approximate' | 'unknown';
+  birthTimeAccuracyMinutes?: number | null;
+  birthPlaceLabel: string;
   latitude: number;
   longitude: number;
   timezone: string;
-  astrology_system: 'western_tropical';
+  astrologySystem: 'western_tropical';
 }
 
 export const accountApi = {
@@ -46,7 +58,10 @@ export const accountApi = {
     method: 'PATCH',
     body: JSON.stringify(profile),
   }),
-  completeProfile: () => api<AccountState>('/api/v1/me/profile/complete', { method: 'POST' }),
+  completeProfile: (profile: ProfileInput) => api<AccountState>('/api/v1/me/profile/complete', {
+    method: 'POST',
+    body: JSON.stringify(profile),
+  }),
   createBirthProfile: (profile: BirthProfileInput) => api('/api/v1/me/birth-profile', {
     method: 'POST',
     body: JSON.stringify(profile),

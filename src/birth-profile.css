@@ -1,0 +1,46 @@
+.radio-stack label > span {
+  display: grid;
+  gap: 4px;
+}
+
+.radio-stack label small,
+.place-search small {
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.time-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.place-search {
+  display: grid;
+  gap: 12px;
+}
+
+.place-search > div {
+  display: grid;
+  grid-template-columns: 1fr auto;
+}
+
+.place-search button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  padding: 0 16px;
+}
+
+@media (max-width: 520px) {
+  .place-search > div {
+    grid-template-columns: 1fr;
+  }
+
+  .place-search button {
+    min-height: 46px;
+    justify-content: center;
+  }
+}

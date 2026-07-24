@@ -213,6 +213,7 @@ function ChevronLabel(){
 }
 
 const SIGNS=['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
+const SIGN_SYMBOLS=['♈︎','♉︎','♊︎','♋︎','♌︎','♍︎','♎︎','♏︎','♐︎','♑︎','♒︎','♓︎'];
 const PLANET_GLYPHS:Record<string,string>={Sun:'☉',Moon:'☽',Mercury:'☿',Venus:'♀',Mars:'♂',Jupiter:'♃',Saturn:'♄',Uranus:'♅',Neptune:'♆',Pluto:'♇',Chiron:'⚷','North Node':'☊','South Node':'☋'};
 
 function absoluteDegree(sign?:string,degree?:number){
@@ -241,7 +242,7 @@ function NatalChartWheel({chart}:{chart:NatalChart}){
       const start=polar(index*30,158);
       const end=polar(index*30,188);
       const label=polar(index*30+15,173);
-      return <g key={sign}><line className="sign-tick" x1={start.x} y1={start.y} x2={end.x} y2={end.y}/><text className="sign-label" x={label.x} y={label.y}>{sign.slice(0,3).toUpperCase()}</text></g>;
+      return <g key={sign}><line className="sign-tick" x1={start.x} y1={start.y} x2={end.x} y2={end.y}/><text className="sign-symbol" x={label.x} y={label.y} aria-label={sign}>{SIGN_SYMBOLS[index]}</text></g>;
     })}
     {houses.map(house=>{
       const angle=absoluteDegree(house.sign,house.degree);

@@ -56,6 +56,14 @@
   color: var(--muted);
 }
 
+.field-errors {
+  margin: 20px 0;
+  padding: 18px 18px 18px 38px;
+  border: 1px solid var(--rose);
+  color: var(--rose);
+  line-height: 1.7;
+}
+
 @media (max-width: 650px) {
   .chart-facts {
     grid-template-columns: 1fr;

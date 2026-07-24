@@ -40,4 +40,12 @@ describe('birth profile API contract',()=>{
     await birthProfilesApi.chart('profile-1');
     expect(apiMock).toHaveBeenCalledWith('/api/v1/birth-profiles/profile-1/chart');
   });
+
+  it('recalculates using the birth profile id and no request body',async()=>{
+    apiMock.mockResolvedValue({});
+    await birthProfilesApi.recalculate('birth-profile-id');
+    expect(apiMock).toHaveBeenCalledWith('/api/v1/birth-profiles/birth-profile-id/recalculate',{
+      method:'POST',
+    });
+  });
 });

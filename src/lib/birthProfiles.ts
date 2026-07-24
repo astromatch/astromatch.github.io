@@ -32,23 +32,43 @@ export interface BirthProfileCreation {
 export interface ChartPoint {
   name?:string;
   body?:string;
+  planet?:string;
   sign?:string;
   degree?:number;
   house?:number|null;
+  retrograde?:boolean;
   [key:string]:unknown;
+}
+
+export interface ChartHouse {
+  house:number;
+  sign:string;
+  degree:number;
+}
+
+export interface ChartAspect {
+  planet_a:string;
+  planet_b:string;
+  aspect:string;
+  orb:number;
 }
 
 export interface NatalChart {
   id?:string;
   data_quality?:string;
   calculation_version?:string;
+  ephemeris_version?:string;
+  house_system?:string;
   calculated_at?:string;
+  sun_sign?:string;
   sun?:ChartPoint|string|null;
   ascendant?:ChartPoint|string|null;
+  ascendant_degree?:number;
   mc?:ChartPoint|string|null;
+  mc_degree?:number;
   planets?:ChartPoint[];
-  houses?:Record<string,unknown>[]|Record<string,unknown>;
-  aspects?:Record<string,unknown>[];
+  houses?:ChartHouse[]|Record<string,unknown>;
+  aspects?:ChartAspect[];
   [key:string]:unknown;
 }
 

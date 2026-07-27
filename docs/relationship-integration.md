@@ -8,46 +8,26 @@ API client.
 
 - `GET/POST /api/v1/people`
 - `GET/PUT /api/v1/people/{id}`
-- `POST /api/v1/people/{id}/archive`
-- `GET/POST /api/v1/matches`
-- `GET/DELETE /api/v1/matches/{id}`
-- `POST /api/v1/matches/{id}/generate`
-- `GET /api/v1/matches/{id}/report`
+- `PATCH/DELETE /api/v1/people/{id}`
+- `GET/POST /api/v1/relationships`
+- `GET/PATCH/DELETE /api/v1/relationships/{id}`
+- `POST /api/v1/relationships/{id}/compatibility/calculate`
+- `GET /api/v1/relationships/{id}/compatibility`
+- `POST /api/v1/relationships/{id}/report/generate`
+- `GET /api/v1/relationships/{id}/report`
+- `POST /api/v1/relationships/{id}/report/regenerate`
+- `GET /api/v1/me/relationship-blueprint`
+- `POST /api/v1/me/relationship-blueprint/generate`
+- `POST /api/v1/me/relationship-blueprint/regenerate`
 
-Match generation always sends a unique `Idempotency-Key`. The frontend does
-not automatically retry this expensive mutation after an ambiguous failure.
+Deterministic compatibility and narrative report generation are represented as
+separate UI and request stages.
 
 ## Backend blockers
 
-### Relationship Blueprint
+### Response DTO alignment
 
-The live OpenAPI currently has no Relationship Blueprint endpoint or DTO.
-Production therefore shows an explicit integration-unavailable state and never
-calculates or invents interpretations in frontend code.
-
-For design development only, a clearly labelled fixture can be enabled with:
-
-```env
-VITE_ENABLE_DEV_FIXTURES=true
-```
-
-The fixture is excluded from the production path unless that flag is
-deliberately enabled.
-
-The backend should document endpoints for:
-
-- retrieving the current blueprint and explicit status;
-- requesting generation with an idempotency key;
-- retrieving asynchronous generation status if applicable;
-- regenerating only when allowed;
-- quota/reset metadata;
-- stale reason and source chart version;
-- archetype, sections, prompts, source factors, limitations and data quality.
-
-### People and Match response DTOs
-
-People and Match operations currently return the generic `Success` response in
-OpenAPI, without concrete response schemas. The frontend boundary accepts both
+The frontend boundary accepts both
 camelCase and snake_case field names temporarily. The backend should publish
 precise schemas for:
 

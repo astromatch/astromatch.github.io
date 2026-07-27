@@ -6,7 +6,7 @@ vi.mock('./api',async importOriginal=>{
   return {...actual,api:apiMock};
 });
 
-import { normalizePerson, normalizeRelationship, normalizeReport, peopleApi, relationshipsApi } from './relationships';
+import { blueprintApi, normalizeBlueprintState, normalizePerson, normalizeRelationship, normalizeReport, peopleApi, relationshipsApi, type PersonInput } from './relationships';
 
 describe('relationship API boundary',()=>{
   beforeEach(()=>apiMock.mockReset());
@@ -18,7 +18,9 @@ describe('relationship API boundary',()=>{
   });
 
   it('normalizes explicit relationship status without inferring from report fields',()=>{
-    expect(normalizeRelationship({id:'m1',person_id:'p1',status:'generating_report',report:{headline:'Not ready'}}).status).toBe('generating_report');
+    expect(normalizeRelationship({id:'m1',person_id:'p1',status:'ready',compatibility_status:'compatibility_ready',report_status:'report_generating',report:{headline:'Not ready'}})).toMatchObject({
+      status:'ready',compatibilityStatus:'compatibility_ready',reportStatus:'report_generating',
+    });
   });
 
   it('normalizes report categories and technical factors',()=>{
@@ -33,12 +35,41 @@ describe('relationship API boundary',()=>{
     expect(apiMock).toHaveBeenCalledWith('/api/v1/people',{signal:undefined});
   });
 
-  it('sends an idempotency key for expensive generation',async()=>{
-    apiMock.mockResolvedValueOnce({id:'m1',personId:'p1',status:'ready'});
-    await relationshipsApi.generate('m1','stable-key');
-    expect(apiMock).toHaveBeenCalledWith('/api/v1/matches/m1/generate',{
-      method:'POST',
-      headers:{'Idempotency-Key':'stable-key'},
+  it('replaces a person through PATCH and archives through DELETE',async()=>{
+    const input:PersonInput={displayName:'Private person',pronouns:null,relationshipType:'dating',notes:null,birthDate:'1997-08-27',birthTime:null,birthTimeStatus:'unknown',birthTimeAccuracyMinutes:null,birthPlaceLabel:'Dumraon, India',latitude:25.55,longitude:84.14,timezone:'Asia/Kolkata',astrologySystem:'western_tropical'};
+    apiMock.mockResolvedValueOnce({id:'p1',...input}).mockResolvedValueOnce(undefined);
+    await peopleApi.update('p1',input);
+    expect(apiMock).toHaveBeenCalledWith('/api/v1/people/p1',{method:'PATCH',body:JSON.stringify(input)});
+    await peopleApi.archive('p1');
+    expect(apiMock).toHaveBeenLastCalledWith('/api/v1/people/p1',{method:'DELETE'});
+  });
+
+  it('maps explicit Blueprint status and generation endpoints',async()=>{
+    expect(normalizeBlueprintState({status:'ready',blueprint:{archetype:{title:'Connector',summary:'Summary'},emotionalNeeds:[],relationshipStrengths:[],growthEdges:[],datingPatterns:[],supportiveDynamics:[],reflectionPrompts:[],dataQuality:'high'}})).toMatchObject({
+      status:'ready',blueprint:{archetype:{title:'Connector'},dataQuality:'high'},
     });
+    apiMock.mockResolvedValueOnce({status:'not_generated',blueprint:null}).mockResolvedValueOnce({status:'ready',blueprint:{}});
+    await blueprintApi.get();
+    expect(apiMock).toHaveBeenCalledWith('/api/v1/me/relationship-blueprint',{signal:undefined});
+    await blueprintApi.generate();
+    expect(apiMock).toHaveBeenLastCalledWith('/api/v1/me/relationship-blueprint/generate',{method:'POST'});
+  });
+
+  it('uses separate deterministic compatibility and narrative generation endpoints',async()=>{
+    apiMock.mockResolvedValue({});
+    await relationshipsApi.calculate('m1','romantic');
+    expect(apiMock).toHaveBeenCalledWith('/api/v1/relationships/m1/compatibility/calculate',{
+      method:'POST',
+      body:JSON.stringify({focus:'romantic'}),
+    });
+    await relationshipsApi.generateReport('m1');
+    expect(apiMock).toHaveBeenLastCalledWith('/api/v1/relationships/m1/report/generate',{method:'POST'});
+  });
+
+  it('creates the relationship with owned profile and person ids in the documented payload',async()=>{
+    const payload={birth_profile_id:'birth-1',person_id:'person-1',relationship_type:'dating' as const,title:'Us'};
+    apiMock.mockResolvedValueOnce({id:'relationship-1',...payload,status:'draft',compatibility_status:'compatibility_not_generated',report_status:'report_not_generated'});
+    await relationshipsApi.create(payload);
+    expect(apiMock).toHaveBeenCalledWith('/api/v1/relationships',{method:'POST',body:JSON.stringify(payload)});
   });
 });

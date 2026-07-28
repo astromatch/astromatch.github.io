@@ -6,7 +6,7 @@ vi.mock('./api',async importOriginal=>{
   return {...actual,api:apiMock};
 });
 
-import { birthProfilesApi, type BirthProfileInput } from './birthProfiles';
+import { birthProfilesApi, normalizeBirthProfileCreation, type BirthProfileInput } from './birthProfiles';
 
 const input:BirthProfileInput={
   display_name:'Deepak',
@@ -33,6 +33,16 @@ describe('birth profile API contract',()=>{
       method:'POST',
       body:JSON.stringify(input),
     });
+  });
+
+  it('accepts a successful direct birth-profile response without treating it as an error',()=>{
+    const profile={id:'profile-1',...input,active_chart_id:'chart-1'};
+    expect(normalizeBirthProfileCreation(profile)).toEqual({profile,active_chart_id:'chart-1'});
+  });
+
+  it('accepts a successful birth_profile response variant',()=>{
+    const profile={id:'profile-1',...input,active_chart_id:'chart-1'};
+    expect(normalizeBirthProfileCreation({birth_profile:profile,active_chart_id:'chart-1'})).toEqual({profile,active_chart_id:'chart-1'});
   });
 
   it('loads the generated chart by profile id',async()=>{

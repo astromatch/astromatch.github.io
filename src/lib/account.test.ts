@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { routeForAccount, type AccountState } from './account';
+import { inferCountryCode, normalizeTimezone, routeForAccount, type AccountState } from './account';
 
 const account = (values: Partial<AccountState>): AccountState => ({
   id: 'internal-account-id',
@@ -27,5 +27,19 @@ describe('account routing', () => {
       onboarding_completed: true,
       next_step: null,
     }))).toBe('/home');
+  });
+});
+
+describe('browser profile context',()=>{
+  it('normalizes the legacy India timezone alias',()=>{
+    expect(normalizeTimezone('Asia/Calcutta')).toBe('Asia/Kolkata');
+  });
+
+  it('prefers timezone country over a mismatched browser language',()=>{
+    expect(inferCountryCode('Asia/Calcutta','en-GB')).toBe('IN');
+  });
+
+  it('falls back to the locale region when the timezone is not mapped',()=>{
+    expect(inferCountryCode('Etc/Unknown','fr-CA')).toBe('CA');
   });
 });

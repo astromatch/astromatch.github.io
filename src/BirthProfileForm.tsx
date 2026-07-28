@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { ArrowRight, Search } from 'lucide-react';
-import type { AccountState } from './lib/account';
+import { normalizeTimezone, type AccountState } from './lib/account';
 import { searchPlaces, supportedTimezones, type PlaceResult } from './lib/geocoding';
 
 const hours=Array.from({length:24},(_,hour)=>String(hour).padStart(2,'0'));
@@ -66,7 +66,7 @@ export function BirthProfileForm({loading,profile,onSubmit}:Props){
       <input type="hidden" name="city" value={selectedPlace?.city??''}/>
       <input type="hidden" name="country" value={selectedPlace?.country??''}/>
     </fieldset>
-    <label>Timezone<input name="timezone" list="timezone-options" defaultValue={profile?.timezone??Intl.DateTimeFormat().resolvedOptions().timeZone} required placeholder="Search timezone"/></label>
+    <label>Timezone<input name="timezone" list="timezone-options" defaultValue={normalizeTimezone(profile?.timezone??Intl.DateTimeFormat().resolvedOptions().timeZone)} required placeholder="Search timezone"/></label>
     <datalist id="timezone-options">{timezones.map(timezone=><option key={timezone} value={timezone}/>)}</datalist>
     <button className="button" disabled={loading||!selectedPlace}>{loading?'Saving…':'Continue to dating profile'} <ArrowRight/></button>
   </form>;

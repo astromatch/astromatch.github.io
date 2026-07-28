@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { ArrowLeft, ArrowRight, Camera, MapPin, Pencil, Plus, Save, Sparkles, Star, Trash2, X } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 import { AppShell } from './components';
 import { ProfileTabs } from './ProfileTabs';
 import { accountApi, type AccountState } from './lib/account';
@@ -17,35 +18,39 @@ function errorMessage(error:unknown,fallback:string){
 }
 
 export function DatingProfilePage(){
+  const [searchParams]=useSearchParams();
+  const onboardingMode=searchParams.get('onboarding')==='dating-profile';
   const [account,setAccount]=useState<AccountState|null>(null);
   const [profile,setProfile]=useState<DatingProfile>(emptyProfile);
   const [loading,setLoading]=useState(true);
   const [saving,setSaving]=useState(false);
   const [uploading,setUploading]=useState(false);
-  const [editing,setEditing]=useState(false);
+  const [editing,setEditing]=useState(onboardingMode);
   const [message,setMessage]=useState('');
   const [fieldErrors,setFieldErrors]=useState<Record<string,string>>({});
   const [prompts,setPrompts]=useState<DatingPrompt[]>([]);
   const [questions,setQuestions]=useState<DatingQuestion[]>([]);
   const fileInput=useRef<HTMLInputElement>(null);
 
-  async function load(){
+  const load=useCallback(async()=>{
     setLoading(true);
     setMessage('');
     try{
       const [accountState,datingState]=await Promise.all([accountApi.get(),datingProfileApi.get()]);
       setAccount(accountState);
       setProfile({...emptyProfile,...datingState});
-      setPrompts(datingState.prompts??[]);
-      setQuestions(datingState.questions??[]);
+      const loadedPrompts=datingState.prompts??[];
+      const loadedQuestions=datingState.questions??[];
+      setPrompts(onboardingMode&&!loadedPrompts.length?promptIdeas.map((prompt,position)=>({prompt,answer:'',position})):loadedPrompts);
+      setQuestions(onboardingMode&&!loadedQuestions.length?questionIdeas.map((question,position)=>({question,answer:'',position})):loadedQuestions);
     }catch(error){
       setMessage(errorMessage(error,'We couldn’t load your dating profile.'));
     }finally{
       setLoading(false);
     }
-  }
+  },[onboardingMode]);
 
-  useEffect(()=>{void load()},[]);
+  useEffect(()=>{void load()},[load]);
 
   const accountProfile=account?.profile;
   const name=accountProfile?.preferred_name??accountProfile?.first_name??auth?.currentUser?.displayName??'Your profile';
@@ -157,6 +162,7 @@ export function DatingProfilePage(){
         <h1>{name}</h1>
         <p>{username} · {profile.visibility}</p>
       </header>
+      {onboardingMode&&<div className="onboarding-dating-intro"><span>03 / 03</span><p className="eyebrow">YOUR DATING PROFILE</p><h2>Show people what makes you, you.</h2><p>Add photos, choose what you’re looking for, and answer a few prompts. Everything stays editable.</p></div>}
       <ProfileTabs/>
       {loading&&<p role="status" className="profile-status">Loading your profile…</p>}
       {message&&<p role="status" className="form-message">{message}</p>}
@@ -168,7 +174,7 @@ export function DatingProfilePage(){
           <label>Username<input name="username" defaultValue={profile.username??''} placeholder="yourname"/></label>
           <label>Maximum distance (km)<input name="max_distance_km" type="number" min="1" max="1000" defaultValue={profile.max_distance_km??''}/></label>
           <label className="full">Bio<textarea name="bio" defaultValue={profile.bio??''} maxLength={2000} rows={4}/></label>
-          <label>Interested in <small>comma separated</small><input name="interested_in" defaultValue={interestedIn.join(', ')}/></label>
+          <label>Orientation / looking for <small>men, women, non_binary, or everyone — comma separated</small><input name="interested_in" defaultValue={interestedIn.join(', ')} placeholder="e.g. women, non_binary"/></label>
           <label>Hobbies <small>comma separated</small><input name="hobbies" defaultValue={profile.hobbies.join(', ')}/></label>
           <label>Interests <small>comma separated</small><input name="interests" defaultValue={profile.interests.join(', ')}/></label>
           <label>Visibility<select name="visibility" defaultValue={profile.visibility}><option value="public">Public</option><option value="matches">Matches only</option><option value="private">Private</option></select></label>

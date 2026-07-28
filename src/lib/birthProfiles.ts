@@ -84,6 +84,12 @@ function sameCreation(profile:BirthProfile,input:BirthProfileInput){
     &&profile.is_primary===input.is_primary;
 }
 
+export function normalizeBirthProfileCreation(value:BirthProfileCreation|BirthProfile|{birth_profile:BirthProfile;active_chart_id?:string|null}):BirthProfileCreation{
+  if('profile' in value)return value;
+  if('birth_profile' in value)return {profile:value.birth_profile,active_chart_id:value.active_chart_id??value.birth_profile.active_chart_id??''};
+  return {profile:value,active_chart_id:value.active_chart_id??''};
+}
+
 export const birthProfilesApi={
   list:()=>api<BirthProfile[]>('/api/v1/birth-profiles'),
   chart:(id:string)=>api<ChartResponse>(`/api/v1/birth-profiles/${id}/chart`),
@@ -97,10 +103,11 @@ export const birthProfilesApi={
   recalculate:(id:string)=>api<ChartResponse>(`/api/v1/birth-profiles/${id}/recalculate`,{method:'POST'}),
   async create(input:BirthProfileInput){
     try{
-      return await api<BirthProfileCreation>('/api/v1/birth-profiles',{
+      const created=await api<BirthProfileCreation|BirthProfile|{birth_profile:BirthProfile;active_chart_id?:string|null}>('/api/v1/birth-profiles',{
         method:'POST',
         body:JSON.stringify(input),
       });
+      return normalizeBirthProfileCreation(created);
     }catch(error){
       if(!(error instanceof ApiError)||error.code!=='NETWORK_ERROR')throw error;
       const profiles=await this.list();
@@ -108,10 +115,11 @@ export const birthProfilesApi={
       if(existing){
         return {profile:existing,active_chart_id:existing.active_chart_id??''};
       }
-      return api<BirthProfileCreation>('/api/v1/birth-profiles',{
+      const retried=await api<BirthProfileCreation|BirthProfile|{birth_profile:BirthProfile;active_chart_id?:string|null}>('/api/v1/birth-profiles',{
         method:'POST',
         body:JSON.stringify(input),
       });
+      return normalizeBirthProfileCreation(retried);
     }
   },
 };

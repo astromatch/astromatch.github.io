@@ -32,10 +32,36 @@ export interface ProfileInput {
   date_of_birth: string;
   relationship_status?: string | null;
   looking_for?: string | null;
-  country_code: string;
-  timezone: string;
-  locale: string;
+  country_code?: string;
+  timezone?: string;
+  locale?: string;
   bio?: string | null;
+}
+
+const timezoneAliases:Record<string,string>={
+  'Asia/Calcutta':'Asia/Kolkata',
+  'US/Eastern':'America/New_York',
+  'US/Central':'America/Chicago',
+  'US/Mountain':'America/Denver',
+  'US/Pacific':'America/Los_Angeles',
+};
+
+const timezoneCountries:Record<string,string>={
+  'Asia/Kolkata':'IN','Asia/Colombo':'LK','Asia/Kathmandu':'NP','Asia/Dhaka':'BD','Asia/Karachi':'PK',
+  'Asia/Dubai':'AE','Asia/Singapore':'SG','Asia/Tokyo':'JP','Asia/Seoul':'KR','Asia/Shanghai':'CN','Asia/Hong_Kong':'HK',
+  'Australia/Sydney':'AU','Pacific/Auckland':'NZ','Europe/London':'GB','Europe/Dublin':'IE','Europe/Paris':'FR','Europe/Berlin':'DE',
+  'America/New_York':'US','America/Chicago':'US','America/Denver':'US','America/Los_Angeles':'US',
+  'America/Toronto':'CA','America/Vancouver':'CA',
+};
+
+export function normalizeTimezone(value:string){
+  return timezoneAliases[value]??value;
+}
+
+export function inferCountryCode(timezone:string,locale:string){
+  const timezoneCountry=timezoneCountries[normalizeTimezone(timezone)];
+  if(timezoneCountry)return timezoneCountry;
+  try{return new Intl.Locale(locale).maximize().region??'US'}catch{return 'US'}
 }
 
 export const accountApi = {

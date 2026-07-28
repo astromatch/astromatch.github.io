@@ -3,7 +3,7 @@ import { Navigate, Route, Routes, Link, useLocation, useNavigate, useParams } fr
 import { ArrowRight, Bookmark, ChevronRight, Circle, Download, Heart, LockKeyhole, MessageCircle, Plus, Send, ShieldCheck, Sparkles, Trash2 } from 'lucide-react';
 import { AppShell, Brand, ButtonLink, Disclaimer, Page, PageTracker, PublicHeader } from './components';
 import { peopleStore, type Person } from './lib/storage'; import { auth } from './lib/firebase'; import { firebaseReady } from './lib/env'; import { track, setAnalyticsConsent } from './lib/analytics';
-import { accountApi, routeForAccount, type AccountState, type ProfileInput } from './lib/account';
+import { accountApi, normalizeTimezone, routeForAccount, type AccountState, type ProfileInput } from './lib/account';
 import { BirthProfileForm } from './BirthProfileForm';
 import { ChartPage } from './ChartPage';
 import { birthProfilesApi, type BirthProfileInput } from './lib/birthProfiles';
@@ -125,16 +125,11 @@ function Onboarding(){
     setLoading(true);
     setMessage('');
     const form=new FormData(e.currentTarget);
-    const locale=navigator.language||'en-US';
-    const countryCode=new Intl.Locale(locale).maximize().region??'US';
     const profile:ProfileInput={
       preferred_name:String(form.get('preferred_name')).trim(),
       gender:String(form.get('gender')).trim()||null,
       pronouns:String(form.get('pronouns')).trim()||null,
       date_of_birth:String(form.get('date_of_birth')),
-      country_code:countryCode,
-      timezone:Intl.DateTimeFormat().resolvedOptions().timeZone,
-      locale,
     };
     try{
       await accountApi.updateProfile(profile);
@@ -162,7 +157,7 @@ function Onboarding(){
       birth_date:String(form.get('birth_date')),
       birth_time:timeStatus==='unknown'||!time?null:time,
       birth_time_precision:timeStatus,
-      timezone:String(form.get('timezone')).trim(),
+      timezone:normalizeTimezone(String(form.get('timezone')).trim()),
       country:String(form.get('country')).trim().toUpperCase(),
       city:String(form.get('city')).trim(),
       latitude:Number(form.get('latitude')),

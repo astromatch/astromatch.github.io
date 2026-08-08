@@ -1,11 +1,143 @@
 /* eslint-disable react-refresh/only-export-components */
-import type { ReactNode } from 'react'; import { Link, NavLink, useLocation } from 'react-router-dom'; import { Home, Heart, MessageCircle, BookOpen, UserRound, ArrowUpRight, Sparkles } from 'lucide-react'; import { track } from './lib/analytics';
-export const routes={home:'/home',blueprint:'/blueprint',ask:'/ask',relationships:'/relationships',people:'/people',saved:'/saved',profile:'/profile',settings:'/settings'} as const;
-export function Brand(){return <Link to="/" className="brand" aria-label="AstroMatch home"><span>✦</span> AstroMatch</Link>}
-export function PublicHeader(){return <header className="public-header"><Brand/><nav><Link to="/about">About</Link><Link to="/privacy">Privacy</Link><Link className="text-link" to="/login">Sign in <ArrowUpRight size={15}/></Link></nav></header>}
-const nav=[['Today',routes.home,Home],['Blueprint',routes.blueprint,BookOpen],['Relationships',routes.relationships,Heart],['Ask',routes.ask,MessageCircle],['Me',routes.profile,UserRound]] as const;
-export function AppShell({children}: {children:ReactNode}){return <div className="app-shell"><aside><Brand/><nav>{nav.map(([label,to,Icon])=><NavLink key={to} to={to}><Icon/><span>{label}</span></NavLink>)}</nav><div className="rail-note"><Sparkles/><p>Your profiles stay private.</p></div></aside><main className="app-main">{children}</main><nav className="bottom-nav" aria-label="Primary">{nav.map(([label,to,Icon])=><NavLink key={to} to={to}><Icon/><span>{label}</span></NavLink>)}</nav></div>}
-export function Page({eyebrow,title,children,action}:{eyebrow?:string;title:string;children?:ReactNode;action?:ReactNode}){return <><header className="page-head">{eyebrow&&<p className="eyebrow">{eyebrow}</p>}<div><h1>{title}</h1>{action}</div></header>{children}</>}
-export function ButtonLink({to,children,secondary=false}:{to:string;children:ReactNode;secondary?:boolean}){return <Link onClick={()=>track('primary_cta_clicked',{cta_name:String(children),page_name:location.hash})} className={secondary?'button secondary':'button'} to={to}>{children}</Link>}
-export function PageTracker(){const location=useLocation(); track('page_view',{page_path:location.pathname}); return null}
-export const Disclaimer=()=> <p className="disclaimer">AstroMatch offers astrological interpretations for reflection and entertainment. It does not replace professional medical, legal, financial or mental-health advice.</p>;
+import type { ReactNode } from "react";
+import { Link, NavLink, useLocation } from "react-router-dom";
+import {
+  Home,
+  Heart,
+  MessageCircle,
+  BookOpen,
+  UserRound,
+  ArrowUpRight,
+  Sparkles,
+  Bookmark,
+} from "lucide-react";
+import { track } from "./lib/analytics";
+export const routes = {
+  home: "/home",
+  blueprint: "/blueprint",
+  ask: "/ask",
+  relationships: "/relationships",
+  people: "/people",
+  saved: "/saved",
+  profile: "/profile",
+  settings: "/settings",
+} as const;
+export function Brand() {
+  return (
+    <Link to="/" className="brand" aria-label="AstroMatch home">
+      <span>✦</span> AstroMatch
+    </Link>
+  );
+}
+export function PublicHeader() {
+  return (
+    <header className="public-header">
+      <Brand />
+      <nav>
+        <Link to="/about">About</Link>
+        <Link to="/privacy">Privacy</Link>
+        <Link className="text-link" to="/login">
+          Sign in <ArrowUpRight size={15} />
+        </Link>
+      </nav>
+    </header>
+  );
+}
+const nav = [
+  ["Today", routes.home, Home],
+  ["Blueprint", routes.blueprint, BookOpen],
+  ["Relationships", routes.relationships, Heart],
+  ["Ask", routes.ask, MessageCircle],
+  ["Saved", routes.saved, Bookmark],
+  ["Me", routes.profile, UserRound],
+] as const;
+export function AppShell({ children }: { children: ReactNode }) {
+  return (
+    <div className="app-shell">
+      <aside>
+        <Brand />
+        <nav>
+          {nav.map(([label, to, Icon]) => (
+            <NavLink key={to} to={to}>
+              <Icon />
+              <span>{label}</span>
+            </NavLink>
+          ))}
+        </nav>
+        <div className="rail-note">
+          <Sparkles />
+          <p>Your profiles stay private.</p>
+        </div>
+      </aside>
+      <main className="app-main">{children}</main>
+      <nav className="bottom-nav" aria-label="Primary">
+        {nav.map(([label, to, Icon]) => (
+          <NavLink key={to} to={to}>
+            <Icon />
+            <span>{label}</span>
+          </NavLink>
+        ))}
+      </nav>
+    </div>
+  );
+}
+export function Page({
+  eyebrow,
+  title,
+  children,
+  action,
+}: {
+  eyebrow?: string;
+  title: string;
+  children?: ReactNode;
+  action?: ReactNode;
+}) {
+  return (
+    <>
+      <header className="page-head">
+        {eyebrow && <p className="eyebrow">{eyebrow}</p>}
+        <div>
+          <h1>{title}</h1>
+          {action}
+        </div>
+      </header>
+      {children}
+    </>
+  );
+}
+export function ButtonLink({
+  to,
+  children,
+  secondary = false,
+}: {
+  to: string;
+  children: ReactNode;
+  secondary?: boolean;
+}) {
+  return (
+    <Link
+      onClick={() =>
+        track("primary_cta_clicked", {
+          cta_name: String(children),
+          page_name: location.hash,
+        })
+      }
+      className={secondary ? "button secondary" : "button"}
+      to={to}
+    >
+      {children}
+    </Link>
+  );
+}
+export function PageTracker() {
+  const location = useLocation();
+  track("page_view", { page_path: location.pathname });
+  return null;
+}
+export const Disclaimer = () => (
+  <p className="disclaimer">
+    AstroMatch offers astrological interpretations for reflection and
+    entertainment. It does not replace professional medical, legal, financial or
+    mental-health advice.
+  </p>
+);

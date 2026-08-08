@@ -10,6 +10,7 @@ import {
   ArrowUpRight,
   Sparkles,
   Bookmark,
+	Compass,
 } from "lucide-react";
 import { track } from "./lib/analytics";
 export const routes = {
@@ -21,6 +22,7 @@ export const routes = {
   saved: "/saved",
   profile: "/profile",
   settings: "/settings",
+  discover: "/discover",
 } as const;
 export function Brand() {
   return (
@@ -47,6 +49,7 @@ const nav = [
   ["Today", routes.home, Home],
   ["Blueprint", routes.blueprint, BookOpen],
   ["Relationships", routes.relationships, Heart],
+	["Discover", routes.discover, Compass],
   ["Ask", routes.ask, MessageCircle],
   ["Saved", routes.saved, Bookmark],
   ["Me", routes.profile, UserRound],

@@ -33,11 +33,20 @@ export interface DatingProfile {
   username:string|null;
   bio:string|null;
   max_distance_km:number|null;
-  preferences:DatingPreferences;
+  preferences?:DatingPreferences;
+	interested_in?:string[];
   hobbies:string[];
   interests:string[];
   visibility:ProfileVisibility;
   discovery_paused:boolean;
+	discovery_active:boolean;
+	relationship_intent:'long_term'|'long_term_open'|'short_term'|'friendship'|'exploring'|null;
+	min_age:number;
+	max_age:number;
+	location_label:string|null;
+	has_discovery_location:boolean;
+	allow_match_to_message_first:boolean;
+	review_status:'pending'|'approved'|'rejected';
   prompts:DatingPrompt[];
   questions:DatingQuestion[];
   photos:DatingPhoto[];
@@ -52,6 +61,13 @@ export interface DatingProfilePatch {
   interests?:string[];
   visibility?:ProfileVisibility;
   discovery_paused?:boolean;
+	relationship_intent?:DatingProfile['relationship_intent'];
+	min_age?:number;
+	max_age?:number;
+	location_label?:string|null;
+	latitude?:number;
+	longitude?:number;
+	allow_match_to_message_first?:boolean;
   prompts?:DatingPrompt[];
   questions?:DatingQuestion[];
 }

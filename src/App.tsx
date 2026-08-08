@@ -48,6 +48,7 @@ import { ChartPage } from "./ChartPage";
 import { birthProfilesApi, type BirthProfileInput } from "./lib/birthProfiles";
 import { ApiError, registerAccountDeletedHandler } from "./lib/api";
 import { DatingProfilePage } from "./DatingProfilePage";
+import { MatchmakingPage } from "./MatchmakingPage";
 import { ProfileTabs } from "./ProfileTabs";
 import {
   BlueprintPage,
@@ -1450,6 +1451,14 @@ export function App() {
           element={
             <Protected>
               <SavedPage />
+            </Protected>
+          }
+        />
+        <Route
+          path="/discover"
+          element={
+            <Protected>
+              <MatchmakingPage />
             </Protected>
           }
         />

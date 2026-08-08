@@ -82,6 +82,10 @@ paths:
     post: {tags: [Matchmaking],summary: Validate the complete dating profile and activate discovery,responses: {'200': {$ref: '#/components/responses/Success'},'422': {$ref: '#/components/responses/Error'}}}
   /api/v1/me/dating-profile/pause:
     post: {tags: [Matchmaking],summary: Immediately pause new discovery presentation,responses: {'200': {$ref: '#/components/responses/Success'}}}
+  /api/v1/me/dating-profile/submit-review:
+    post: {tags: [Safety],summary: Submit a completed dating profile to the moderation queue,responses: {'202': {$ref: '#/components/responses/Success'}}}
+  /api/v1/me/dating-profile/appeals:
+    post: {tags: [Safety],summary: Appeal the latest restriction or rejection,requestBody: {required: true,content: {application/json: {schema: {type: object,required: [reason],properties: {reason: {type: string,minLength: 20,maxLength: 1000}}}}}},responses: {'201': {$ref: '#/components/responses/Success'},'409': {$ref: '#/components/responses/Error'},'422': {$ref: '#/components/responses/Error'}}}
   /api/v1/discovery/introductions:
     get: {tags: [Matchmaking],summary: Get up to five stable mutually eligible introductions for the UTC day,responses: {'200': {$ref: '#/components/responses/Introductions'},'403': {$ref: '#/components/responses/Error'}}}
   /api/v1/discovery/introductions/{user_id}/decision:
@@ -104,6 +108,29 @@ paths:
       - {name: user_id,in: path,required: true,schema: {type: string,format: uuid}}
     put: {tags: [Safety],summary: Block a user and immediately revoke discovery and match access,responses: {'204': {description: Block active},'403': {$ref: '#/components/responses/Error'}}}
     delete: {tags: [Safety],summary: Remove the current user's block,responses: {'204': {description: Block removed}}}
+  /api/v1/safety/hides/{user_id}:
+    parameters: [{name: user_id,in: path,required: true,schema: {type: string,format: uuid}}]
+    put: {tags: [Safety],summary: Privately remove a profile from future discovery,responses: {'204': {description: Profile hidden}}}
+    delete: {tags: [Safety],summary: Remove a private hide,responses: {'204': {description: Hide removed}}}
+  /api/v1/safety/reports:
+    post:
+      tags: [Safety]
+      summary: Report and immediately hide a profile; urgent or repeated reports pause discovery for review
+      parameters: [{$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody: {required: true,content: {application/json: {schema: {$ref: '#/components/schemas/UserReportInput'}}}}
+      responses: {'201': {$ref: '#/components/responses/Success'},'403': {$ref: '#/components/responses/Error'},'422': {$ref: '#/components/responses/Error'}}
+  /api/v1/matchmaking/notifications:
+    get: {tags: [Matchmaking],summary: List the latest 50 matchmaking and moderation notifications,responses: {'200': {$ref: '#/components/responses/Success'}}}
+  /api/v1/matchmaking/notifications/{id}/read:
+    parameters: [{$ref: '#/components/parameters/ID'}]
+    put: {tags: [Matchmaking],summary: Idempotently mark a notification read,responses: {'204': {description: Notification read},'404': {$ref: '#/components/responses/Error'}}}
+  /api/v1/moderation/matchmaking/cases:
+    get: {tags: [Safety],summary: List prioritized open moderation cases (moderator only),responses: {'200': {$ref: '#/components/responses/Success'},'403': {$ref: '#/components/responses/Error'}}}
+  /api/v1/moderation/matchmaking/cases/{id}:
+    parameters: [{$ref: '#/components/parameters/ID'}]
+    put: {tags: [Safety],summary: Resolve and audit a moderation case (moderator only),requestBody: {required: true,content: {application/json: {schema: {$ref: '#/components/schemas/ModerationResolution'}}}},responses: {'200': {$ref: '#/components/responses/Success'},'403': {$ref: '#/components/responses/Error'},'422': {$ref: '#/components/responses/Error'}}}
+  /api/v1/moderation/matchmaking/metrics:
+    get: {tags: [Safety],summary: Review marketplace safety density and exposure concentration (moderator only),responses: {'200': {$ref: '#/components/responses/Success'},'403': {$ref: '#/components/responses/Error'}}}
   /api/v1/birth-profiles:
     get:
       tags: [Birth Charts]
@@ -337,6 +364,8 @@ components:
         has_discovery_location: {type: boolean,readOnly: true}
         allow_match_to_message_first: {type: boolean}
         review_status: {type: string,enum: [pending,approved,rejected],readOnly: true}
+        verification_status: {type: string,enum: [unverified,pending,verified,rejected],readOnly: true}
+        moderation_note: {type: [string,'null'],maxLength: 1000,readOnly: true}
         dating_prompts: {type: array,maxItems: 3,items: {$ref: '#/components/schemas/DatingPrompt'}}
         questions: {type: array,maxItems: 3,items: {$ref: '#/components/schemas/DatingQuestion'}}
         photos: {type: array,maxItems: 6,items: {$ref: '#/components/schemas/DatingPhoto'}}
@@ -378,6 +407,26 @@ components:
         photo_url: {type: [string,'null'],format: uri}
         rank_score: {type: integer,minimum: 0,maximum: 100}
         compatibility_score: {type: integer,minimum: 0,maximum: 100}
+        ranking_version: {type: string}
+        eligibility_reason_codes: {type: array,items: {type: string}}
+        explanation_themes: {type: array,items: {type: string}}
+    UserReportInput:
+      type: object
+      required: [reported_user_id,category,context_type]
+      additionalProperties: false
+      properties:
+        reported_user_id: {type: string,format: uuid}
+        category: {type: string,enum: [impersonation,harassment,sexual_content,hate,spam,underage,offline_safety,other]}
+        details: {type: [string,'null'],maxLength: 1000}
+        context_type: {type: string,enum: [introduction,match,profile]}
+        context_id: {type: [string,'null'],format: uuid}
+    ModerationResolution:
+      type: object
+      required: [resolution,reason]
+      additionalProperties: false
+      properties:
+        resolution: {type: string,enum: [approved,warned,restricted,rejected,dismissed]}
+        reason: {type: string,minLength: 3,maxLength: 1000}
         explanation_themes: {type: array,items: {type: string}}
     IntroductionDecision:
       type: object
@@ -507,7 +556,7 @@ components:
     BirthProfile: {description: Birth profile with active chart reference,content: {application/json: {schema: {type: object,properties: {data: {$ref: '#/components/schemas/BirthProfile'}}}}}}
     Chart: {description: Active deterministic chart and source profile,content: {application/json: {schema: {type: object,properties: {data: {type: object,properties: {birth_profile: {$ref: '#/components/schemas/BirthProfile'},chart: {$ref: '#/components/schemas/ChartCalculation'}}}}}}}}
     DatingProfile: {description: Current user's editable dating profile,content: {application/json: {schema: {type: object,properties: {data: {$ref: '#/components/schemas/DatingProfile'}}}}}}
-    Introductions: {description: Daily curated introductions,content: {application/json: {schema: {type: object,properties: {data: {type: object,properties: {items: {type: array,maxItems: 5,items: {$ref: '#/components/schemas/MatchmakingIntroduction'}}}}}}}}}
+    Introductions: {description: Daily curated introductions with sparse-market state,content: {application/json: {schema: {type: object,properties: {data: {type: object,properties: {items: {type: array,maxItems: 5,items: {$ref: '#/components/schemas/MatchmakingIntroduction'}},inventory_state: {enum: [waitlist,reduced,open]},cadence: {enum: [waitlist,reduced,daily]},eligible_count: {type: integer,minimum: 0},ranking_version: {type: string}}}}}}}}
     Decision: {description: Persisted decision and optional newly created mutual match,content: {application/json: {schema: {type: object,properties: {data: {type: object,properties: {decision: {enum: [like,pass]},match: {oneOf: [{$ref: '#/components/schemas/DatingMatch'},{type: 'null'}]}}}}}}}}
     DatingMatch: {description: Mutual dating match,content: {application/json: {schema: {type: object,properties: {data: {$ref: '#/components/schemas/DatingMatch'}}}}}}
     DatingMatches: {description: Active mutual dating matches,content: {application/json: {schema: {type: object,properties: {data: {type: object,properties: {items: {type: array,items: {$ref: '#/components/schemas/DatingMatch'}}}}}}}}}

@@ -11,7 +11,7 @@ import { searchPlaces, type PlaceResult } from './lib/geocoding';
 
 const promptIdeas=['The quickest way to my heart is…','A perfect Sunday looks like…','I’ll never stop talking about…'];
 const questionIdeas=['What are you looking for right now?','What makes a relationship feel safe?'];
-const emptyProfile:DatingProfile={username:null,bio:null,max_distance_km:null,preferences:{},interested_in:[],hobbies:[],interests:[],visibility:'matches',discovery_paused:false,discovery_active:false,relationship_intent:null,min_age:18,max_age:50,location_label:null,has_discovery_location:false,allow_match_to_message_first:true,review_status:'approved',prompts:[],questions:[],photos:[]};
+const emptyProfile:DatingProfile={username:null,bio:null,max_distance_km:null,preferences:{},interested_in:[],hobbies:[],interests:[],visibility:'matches',discovery_paused:false,discovery_active:false,relationship_intent:null,min_age:18,max_age:50,location_label:null,has_discovery_location:false,allow_match_to_message_first:true,review_status:'pending',verification_status:'unverified',prompts:[],questions:[],photos:[]};
 const commaList=(value:FormDataEntryValue|null)=>String(value??'').split(',').map(item=>item.trim()).filter(Boolean);
 
 function errorMessage(error:unknown,fallback:string){
@@ -169,6 +169,15 @@ export function DatingProfilePage(){
     }
   }
 
+  async function submitReview(){
+    try{await datingProfileApi.submitReview();await load();setMessage('Profile submitted for review. Discovery stays off until approval.')}catch(error){setMessage(errorMessage(error,'We couldn’t submit your profile.'))}
+  }
+  async function appeal(){
+    const reason=prompt('Tell the review team why this decision should be reconsidered (at least 20 characters).')?.trim();
+    if(!reason)return;
+    try{await datingProfileApi.appeal(reason);setMessage('Appeal submitted. We’ll notify you after review.')}catch(error){setMessage(errorMessage(error,'We couldn’t submit your appeal.'))}
+  }
+
   return <AppShell>
     <section className="dating-profile">
       <header className="dating-profile-head">
@@ -176,6 +185,10 @@ export function DatingProfilePage(){
         <p className="eyebrow">{profile.discovery_paused?'DISCOVERY PAUSED':'YOUR DATING PROFILE'}</p>
         <h1>{name}</h1>
         <p>{username} · {profile.visibility}</p>
+        <p>Review: {profile.review_status} · Verification: {profile.verification_status}</p>
+        {profile.moderation_note&&<p>{profile.moderation_note}</p>}
+        {profile.review_status==='pending'&&<button className="button secondary" onClick={submitReview}>Submit for review</button>}
+        {profile.review_status==='rejected'&&<button className="button secondary" onClick={appeal}>Appeal decision</button>}
       </header>
       {onboardingMode&&<div className="onboarding-dating-intro"><span>03 / 03</span><p className="eyebrow">YOUR DATING PROFILE</p><h2>Show people what makes you, you.</h2><p>Add photos, choose what you’re looking for, and answer a few prompts. Everything stays editable.</p></div>}
       <ProfileTabs/>

@@ -47,6 +47,8 @@ export interface DatingProfile {
 	has_discovery_location:boolean;
 	allow_match_to_message_first:boolean;
 	review_status:'pending'|'approved'|'rejected';
+  verification_status:'unverified'|'pending'|'verified'|'rejected';
+  moderation_note?:string|null;
   prompts:DatingPrompt[];
   questions:DatingQuestion[];
   photos:DatingPhoto[];
@@ -109,6 +111,8 @@ export function validateDatingPhoto(file:File){
 
 export const datingProfileApi={
   get:()=>api<DatingProfile>('/api/v1/me/dating-profile'),
+  submitReview:()=>api<{id:string;status:string}>('/api/v1/me/dating-profile/submit-review',{method:'POST'}),
+  appeal:(reason:string)=>api<{id:string;status:string}>('/api/v1/me/dating-profile/appeals',{method:'POST',body:JSON.stringify({reason})}),
   patch:(patch:DatingProfilePatch)=>retry503(()=>api<DatingProfile>('/api/v1/me/dating-profile',{
     method:'PATCH',
     body:JSON.stringify(patch),

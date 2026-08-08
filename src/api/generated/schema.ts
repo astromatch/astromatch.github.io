@@ -550,6 +550,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/me/dating-profile/submit-review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Submit a completed dating profile to the moderation queue */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                202: components["responses"]["Success"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/dating-profile/appeals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Appeal the latest restriction or rejection */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        reason: string;
+                    };
+                };
+            };
+            responses: {
+                201: components["responses"]["Success"];
+                409: components["responses"]["Error"];
+                422: components["responses"]["Error"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/discovery/introductions": {
         parameters: {
             query?: never;
@@ -758,6 +822,263 @@ export interface paths {
                 };
             };
         };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/safety/hides/{user_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /** Privately remove a profile from future discovery */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    user_id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Profile hidden */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        post?: never;
+        /** Remove a private hide */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    user_id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Hide removed */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/safety/reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Report and immediately hide a profile; urgent or repeated reports pause discovery for review */
+        post: {
+            parameters: {
+                query?: never;
+                header: {
+                    "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                };
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["UserReportInput"];
+                };
+            };
+            responses: {
+                201: components["responses"]["Success"];
+                403: components["responses"]["Error"];
+                422: components["responses"]["Error"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/matchmaking/notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the latest 50 matchmaking and moderation notifications */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                200: components["responses"]["Success"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/matchmaking/notifications/{id}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ID"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /** Idempotently mark a notification read */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: components["parameters"]["ID"];
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Notification read */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                404: components["responses"]["Error"];
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/moderation/matchmaking/cases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List prioritized open moderation cases (moderator only) */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                200: components["responses"]["Success"];
+                403: components["responses"]["Error"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/moderation/matchmaking/cases/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ID"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /** Resolve and audit a moderation case (moderator only) */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: components["parameters"]["ID"];
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ModerationResolution"];
+                };
+            };
+            responses: {
+                200: components["responses"]["Success"];
+                403: components["responses"]["Error"];
+                422: components["responses"]["Error"];
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/moderation/matchmaking/metrics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Review marketplace safety density and exposure concentration (moderator only) */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                200: components["responses"]["Success"];
+                403: components["responses"]["Error"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -2447,6 +2768,9 @@ export interface components {
             allow_match_to_message_first?: boolean;
             /** @enum {string} */
             readonly review_status?: "pending" | "approved" | "rejected";
+            /** @enum {string} */
+            readonly verification_status?: "unverified" | "pending" | "verified" | "rejected";
+            readonly moderation_note?: string | null;
             dating_prompts?: components["schemas"]["DatingPrompt"][];
             questions?: components["schemas"]["DatingQuestion"][];
             photos?: components["schemas"]["DatingPhoto"][];
@@ -2500,7 +2824,26 @@ export interface components {
             photo_url?: string | null;
             rank_score: number;
             compatibility_score: number;
+            ranking_version?: string;
+            eligibility_reason_codes?: string[];
             explanation_themes: string[];
+        };
+        UserReportInput: {
+            /** Format: uuid */
+            reported_user_id: string;
+            /** @enum {string} */
+            category: "impersonation" | "harassment" | "sexual_content" | "hate" | "spam" | "underage" | "offline_safety" | "other";
+            details?: string | null;
+            /** @enum {string} */
+            context_type: "introduction" | "match" | "profile";
+            /** Format: uuid */
+            context_id?: string | null;
+        };
+        ModerationResolution: {
+            /** @enum {string} */
+            resolution: "approved" | "warned" | "restricted" | "rejected" | "dismissed";
+            reason: string;
+            explanation_themes?: string[];
         };
         IntroductionDecision: {
             /** @enum {string} */
@@ -2794,7 +3137,7 @@ export interface components {
                 };
             };
         };
-        /** @description Daily curated introductions */
+        /** @description Daily curated introductions with sparse-market state */
         Introductions: {
             headers: {
                 [name: string]: unknown;
@@ -2803,6 +3146,12 @@ export interface components {
                 "application/json": {
                     data?: {
                         items?: components["schemas"]["MatchmakingIntroduction"][];
+                        /** @enum {unknown} */
+                        inventory_state?: "waitlist" | "reduced" | "open";
+                        /** @enum {unknown} */
+                        cadence?: "waitlist" | "reduced" | "daily";
+                        eligible_count?: number;
+                        ranking_version?: string;
                     };
                 };
             };

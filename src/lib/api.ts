@@ -10,6 +10,7 @@ export type ApiErrorCode =
   | "RATE_LIMITED"
   | "SERVER_ERROR"
   | "NETWORK_ERROR"
+  | "REQUEST_TIMEOUT"
   | "ACCOUNT_DELETED"
   | "PERSON_DATA_CONSENT_REQUIRED"
   | "AI_USAGE_LIMIT_REACHED"
@@ -25,6 +26,10 @@ export class ApiError extends Error {
   ) {
     super(message);
   }
+}
+let accountDeletedHandler: (() => void | Promise<void>) | undefined;
+export function registerAccountDeletedHandler(handler: (() => void | Promise<void>) | undefined) {
+  accountDeletedHandler = handler;
 }
 const codes: Record<number, ApiErrorCode> = {
   400: "VALIDATION_ERROR",
@@ -48,6 +53,7 @@ export function requestHeaders(
   if (token) headers.set("Authorization", `Bearer ${token}`);
   return headers;
 }
+export const idempotencyHeaders = () => ({ "Idempotency-Key": crypto.randomUUID() });
 
 export async function api<T>(path: string, options: RequestInit = {}) {
   const requestId = crypto.randomUUID();
@@ -56,9 +62,13 @@ export async function api<T>(path: string, options: RequestInit = {}) {
   let forceTokenRefresh = false;
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     const token = await auth?.currentUser?.getIdToken(forceTokenRefresh);
+    const timeoutController = new AbortController();
+    const timeout = setTimeout(() => timeoutController.abort(), isGet ? 20_000 : 60_000);
+    const signal = options.signal ? AbortSignal.any([options.signal, timeoutController.signal]) : timeoutController.signal;
     try {
       const response = await fetch(`${env.VITE_API_BASE_URL}${path}`, {
         ...options,
+        signal,
         headers: requestHeaders(options, token, requestId),
       });
       if (response.status === 401 && !forceTokenRefresh && auth?.currentUser) {
@@ -78,6 +88,9 @@ export async function api<T>(path: string, options: RequestInit = {}) {
           error?.fields,
           body?.meta?.requestId ?? requestId,
         );
+        if (apiError.code === "ACCOUNT_DELETED") {
+          try { await accountDeletedHandler?.(); } catch { /* Preserve the API error. */ }
+        }
         if (
           isGet &&
           (response.status === 500 || response.status === 503) &&
@@ -91,7 +104,10 @@ export async function api<T>(path: string, options: RequestInit = {}) {
       return (body?.data ?? body) as T;
     } catch (error) {
       if (error instanceof ApiError) throw error;
-      if ((error as Error).name === "AbortError") throw error;
+      if ((error as Error).name === "AbortError") {
+        if (options.signal?.aborted) throw error;
+        throw new ApiError("REQUEST_TIMEOUT", "AstroMatch took too long to respond. Please try again.", 0);
+      }
       if (isGet && attempt < maxAttempts - 1) {
         await retryDelay(attempt);
         continue;
@@ -101,7 +117,7 @@ export async function api<T>(path: string, options: RequestInit = {}) {
         "AstroMatch could not connect. Please try again.",
         0,
       );
-    }
+    } finally { clearTimeout(timeout); }
   }
   throw new ApiError(
     "NETWORK_ERROR",

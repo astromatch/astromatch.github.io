@@ -10,6 +10,10 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: npm }
       - run: npm ci
+      - name: Verify backend contract snapshot
+        run: |
+          npm run api:generate
+          git diff --exit-code -- src/api/generated/schema.ts
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test

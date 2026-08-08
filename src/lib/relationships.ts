@@ -1,4 +1,4 @@
-import { api } from "./api";
+import { api, idempotencyHeaders } from "./api";
 
 export type BirthTimeQuality = "exact" | "approximate" | "unknown";
 export type PersonRelationship =
@@ -498,6 +498,7 @@ export const blueprintApi = {
     return normalizeBlueprintState(
       await api<unknown>("/api/v1/me/relationship-blueprint/generate", {
         method: "POST",
+        headers: idempotencyHeaders(),
       }),
     );
   },
@@ -505,6 +506,7 @@ export const blueprintApi = {
     return normalizeBlueprintState(
       await api<unknown>("/api/v1/me/relationship-blueprint/regenerate", {
         method: "POST",
+        headers: idempotencyHeaders(),
       }),
     );
   },
@@ -579,6 +581,7 @@ export const relationshipsApi = {
   async calculate(id: string, focus: MatchFocus) {
     return api<unknown>(`/api/v1/relationships/${id}/compatibility/calculate`, {
       method: "POST",
+      headers: idempotencyHeaders(),
       body: JSON.stringify({ focus }),
     });
   },
@@ -592,6 +595,7 @@ export const relationshipsApi = {
   generateReport: (id: string) =>
     api<unknown>(`/api/v1/relationships/${id}/report/generate`, {
       method: "POST",
+      headers: idempotencyHeaders(),
     }),
   async report(id: string, signal?: AbortSignal) {
     return normalizeReport(
@@ -602,6 +606,7 @@ export const relationshipsApi = {
     return normalizeReport(
       await api<unknown>(`/api/v1/relationships/${id}/report/regenerate`, {
         method: "POST",
+        headers: idempotencyHeaders(),
       }),
     );
   },

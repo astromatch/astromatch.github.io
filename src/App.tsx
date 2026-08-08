@@ -46,7 +46,7 @@ import {
 import { BirthProfileForm } from "./BirthProfileForm";
 import { ChartPage } from "./ChartPage";
 import { birthProfilesApi, type BirthProfileInput } from "./lib/birthProfiles";
-import { ApiError } from "./lib/api";
+import { ApiError, registerAccountDeletedHandler } from "./lib/api";
 import { DatingProfilePage } from "./DatingProfilePage";
 import { ProfileTabs } from "./ProfileTabs";
 import {
@@ -58,7 +58,7 @@ import {
   RelationshipReportPage,
   RelationshipsPage,
 } from "./RelationshipPages";
-import { wakeBackend } from "./lib/backendWake";
+import { waitForBackend, wakeBackend, type BackendReadiness } from "./lib/backendWake";
 import { AskPage, SavedPage, SettingsPage } from "./ConnectedPages";
 import { relationshipsApi, type Relationship } from "./lib/relationships";
 
@@ -1320,6 +1320,15 @@ function Onboarding() {
   );
 }
 export function App() {
+  const navigate = useNavigate();
+  useEffect(() => {
+    registerAccountDeletedHandler(async () => {
+      await auth?.signOut();
+      for (const key of Object.keys(localStorage)) if (key.startsWith("am:")) localStorage.removeItem(key);
+      navigate("/login?deleted=1", { replace: true });
+    });
+    return () => registerAccountDeletedHandler(undefined);
+  }, [navigate]);
   return (
     <>
       <PageTracker />
@@ -1504,6 +1513,11 @@ function Protected({ children }: { children: ReactNode }) {
   const location = useLocation();
   const [checked, setChecked] = useState(!auth);
   const [signedIn, setSignedIn] = useState(Boolean(auth?.currentUser));
+  const [backend, setBackend] = useState<BackendReadiness | "checking">("checking");
+  const checkBackend = () => {
+    setBackend("checking");
+    void waitForBackend().then(setBackend);
+  };
   useEffect(() => {
     let unsubscribe = () => {};
     const authInstance = auth;
@@ -1514,6 +1528,7 @@ function Protected({ children }: { children: ReactNode }) {
           setChecked(true);
         });
       });
+    checkBackend();
     let robots = document.querySelector<HTMLMetaElement>('meta[name="robots"]');
     const existed = Boolean(robots);
     const previous = robots?.content;
@@ -1538,5 +1553,9 @@ function Protected({ children }: { children: ReactNode }) {
     );
   if (!signedIn)
     return <Navigate to="/login" state={{ from: location.pathname }} replace />;
+  if (backend === "checking")
+    return <div className="generation" role="status"><span /><p>AstroMatch is waking up. This can take about a minute…</p></div>;
+  if (backend !== "ready")
+    return <div className="empty"><Sparkles /><h2>AstroMatch could not wake up</h2><p>{backend === "offline" ? "Check your connection, then try again." : "The service is taking longer than expected."}</p><button className="button" onClick={checkBackend}>Try again</button></div>;
   return children;
 }

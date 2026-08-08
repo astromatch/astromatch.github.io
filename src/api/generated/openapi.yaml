@@ -1,11 +1,11 @@
 openapi: 3.1.0
 info:
   title: AstroMatch API
-  version: 1.0.0
+  version: 1.1.0
   description: Private relationship astrology API. Interpretations are reflective and not scientifically predictive.
 servers: [{url: "/",description: Current API host}]
 security: [{firebaseBearer: []}]
-tags: [{name: System,description: Health and metadata},{name: Me,description: Account and onboarding profile},{name: Dating Profile,description: Private editing surfaces and photo management},{name: Birth Charts,description: Owned birth profiles and deterministic natal charts},{name: People,description: Private people},{name: Relationships,description: Private relationship intelligence},{name: Matches,description: Legacy compatibility reports},{name: Conversations,description: Contextual questions},{name: Sharing,description: Private share metadata},{name: Usage,description: AI usage summary}]
+tags: [{name: System,description: Health and metadata},{name: Me,description: Account and onboarding profile},{name: Dating Profile,description: Private editing surfaces and photo management},{name: Matchmaking,description: Real-user discovery and mutual matches},{name: Safety,description: Cross-user safety controls},{name: Birth Charts,description: Owned birth profiles and deterministic natal charts},{name: People,description: Private people},{name: Relationships,description: Private relationship intelligence},{name: Matches,description: Legacy compatibility reports},{name: Conversations,description: Contextual questions},{name: Sharing,description: Private share metadata},{name: Usage,description: AI usage summary}]
 paths:
   /health:
     get:
@@ -78,6 +78,32 @@ paths:
       tags: [Dating Profile]
       requestBody: {required: true,content: {application/json: {schema: {type: object,required: [photo_ids],additionalProperties: false,properties: {photo_ids: {type: array,maxItems: 6,uniqueItems: true,items: {type: string,format: uuid}}}}}}}
       responses: {'200': {$ref: '#/components/responses/Success'},'422': {$ref: '#/components/responses/Error'}}
+  /api/v1/me/dating-profile/activate:
+    post: {tags: [Matchmaking],summary: Validate the complete dating profile and activate discovery,responses: {'200': {$ref: '#/components/responses/Success'},'422': {$ref: '#/components/responses/Error'}}}
+  /api/v1/me/dating-profile/pause:
+    post: {tags: [Matchmaking],summary: Immediately pause new discovery presentation,responses: {'200': {$ref: '#/components/responses/Success'}}}
+  /api/v1/discovery/introductions:
+    get: {tags: [Matchmaking],summary: Get up to five stable mutually eligible introductions for the UTC day,responses: {'200': {$ref: '#/components/responses/Introductions'},'403': {$ref: '#/components/responses/Error'}}}
+  /api/v1/discovery/introductions/{user_id}/decision:
+    parameters:
+      - {name: user_id,in: path,required: true,schema: {type: string,format: uuid}}
+      - {$ref: '#/components/parameters/IdempotencyKey'}
+    put:
+      tags: [Matchmaking]
+      summary: Idempotently like or pass on an introduction
+      requestBody: {required: true,content: {application/json: {schema: {$ref: '#/components/schemas/IntroductionDecision'}}}}
+      responses: {'200': {$ref: '#/components/responses/Decision'},'403': {$ref: '#/components/responses/Error'},'409': {$ref: '#/components/responses/Error'},'422': {$ref: '#/components/responses/Error'}}
+  /api/v1/dating-matches:
+    get: {tags: [Matchmaking],summary: List active mutual dating matches,responses: {'200': {$ref: '#/components/responses/DatingMatches'}}}
+  /api/v1/dating-matches/{id}:
+    parameters: [{$ref: '#/components/parameters/ID'}]
+    get: {tags: [Matchmaking],summary: Get a mutual match and server-resolved first-move access,responses: {'200': {$ref: '#/components/responses/DatingMatch'},'404': {$ref: '#/components/responses/Error'}}}
+    delete: {tags: [Matchmaking],summary: Idempotently close a mutual match,responses: {'204': {description: Match closed},'404': {$ref: '#/components/responses/Error'}}}
+  /api/v1/safety/blocks/{user_id}:
+    parameters:
+      - {name: user_id,in: path,required: true,schema: {type: string,format: uuid}}
+    put: {tags: [Safety],summary: Block a user and immediately revoke discovery and match access,responses: {'204': {description: Block active},'403': {$ref: '#/components/responses/Error'}}}
+    delete: {tags: [Safety],summary: Remove the current user's block,responses: {'204': {description: Block removed}}}
   /api/v1/birth-profiles:
     get:
       tags: [Birth Charts]
@@ -298,11 +324,19 @@ components:
           type: object
           additionalProperties: false
           properties:
-            interested_in: {type: array,maxItems: 4,items: {type: string,description: Case-insensitive,enum: [men,women,non_binary,everyone]}}
+            interested_in: {type: array,maxItems: 4,items: {type: string,enum: [woman,man,non_binary,self_described]}}
         hobbies: {type: array,maxItems: 20,items: {type: string,maxLength: 50}}
         interests: {type: array,maxItems: 20,items: {type: string,maxLength: 50}}
         visibility: {type: string,enum: [public,matches,private]}
         discovery_paused: {type: boolean}
+        discovery_active: {type: boolean,readOnly: true}
+        relationship_intent: {type: [string,'null'],enum: [long_term,long_term_open,short_term,friendship,exploring,null]}
+        min_age: {type: integer,minimum: 18,maximum: 100}
+        max_age: {type: integer,minimum: 18,maximum: 100}
+        location_label: {type: [string,'null'],maxLength: 120}
+        has_discovery_location: {type: boolean,readOnly: true}
+        allow_match_to_message_first: {type: boolean}
+        review_status: {type: string,enum: [pending,approved,rejected],readOnly: true}
         dating_prompts: {type: array,maxItems: 3,items: {$ref: '#/components/schemas/DatingPrompt'}}
         questions: {type: array,maxItems: 3,items: {$ref: '#/components/schemas/DatingQuestion'}}
         photos: {type: array,maxItems: 6,items: {$ref: '#/components/schemas/DatingPhoto'}}
@@ -313,14 +347,57 @@ components:
         username: {type: string,pattern: '^[a-z0-9_]{3,30}$'}
         bio: {type: string,maxLength: 500}
         max_distance_km: {type: integer,minimum: 1,maximum: 500}
-        interested_in: {type: array,maxItems: 4,items: {type: string,enum: [men,women,non_binary,everyone]}}
+        interested_in: {type: array,maxItems: 4,items: {type: string,enum: [woman,man,non_binary,self_described]}}
         hobbies: {type: array,maxItems: 20,items: {type: string,maxLength: 50}}
         interests: {type: array,maxItems: 20,items: {type: string,maxLength: 50}}
         visibility: {type: string,enum: [public,matches,private]}
         discovery_paused: {type: boolean}
+        relationship_intent: {type: [string,'null'],enum: [long_term,long_term_open,short_term,friendship,exploring,null]}
+        min_age: {type: integer,minimum: 18,maximum: 100}
+        max_age: {type: integer,minimum: 18,maximum: 100}
+        location_label: {type: [string,'null'],maxLength: 120}
+        latitude: {type: number,minimum: -90,maximum: 90,writeOnly: true}
+        longitude: {type: number,minimum: -180,maximum: 180,writeOnly: true}
+        allow_match_to_message_first: {type: boolean}
         dating_prompts: {type: array,maxItems: 3,items: {type: object,required: [prompt,answer,position],properties: {prompt: {type: string,maxLength: 150},answer: {type: string,maxLength: 500},position: {type: integer}}}}
         prompts: {type: array,maxItems: 3,items: {type: object,required: [prompt,answer,position],properties: {prompt: {type: string,maxLength: 150},answer: {type: string,maxLength: 500},position: {type: integer}}}}
         questions: {type: array,maxItems: 3,items: {type: object,required: [question,answer,position],properties: {question: {type: string,maxLength: 200},answer: {type: string,maxLength: 500},position: {type: integer}}}}
+    MatchmakingIntroduction:
+      type: object
+      required: [user_id,display_name,age,distance_km,relationship_intent,rank_score,compatibility_score,explanation_themes]
+      properties:
+        user_id: {type: string,format: uuid}
+        display_name: {type: string}
+        username: {type: [string,'null']}
+        age: {type: integer,minimum: 18}
+        bio: {type: [string,'null']}
+        location_label: {type: [string,'null']}
+        distance_km: {type: integer,minimum: 0}
+        relationship_intent: {type: string}
+        interests: {type: array,items: {type: string}}
+        photo_url: {type: [string,'null'],format: uri}
+        rank_score: {type: integer,minimum: 0,maximum: 100}
+        compatibility_score: {type: integer,minimum: 0,maximum: 100}
+        explanation_themes: {type: array,items: {type: string}}
+    IntroductionDecision:
+      type: object
+      required: [decision]
+      additionalProperties: false
+      properties:
+        decision: {type: string,enum: [like,pass]}
+        allow_match_to_message_first: {type: boolean,description: Valid only for a like; defaults to the profile setting.}
+    DatingMatch:
+      type: object
+      required: [id,other_user_id,other_display_name,status,can_current_user_initiate,can_other_user_initiate,matched_at]
+      properties:
+        id: {type: string,format: uuid}
+        other_user_id: {type: string,format: uuid}
+        other_display_name: {type: string}
+        other_photo_url: {type: [string,'null'],format: uri}
+        status: {type: string,enum: [active,unmatched,blocked]}
+        can_current_user_initiate: {type: boolean}
+        can_other_user_initiate: {type: boolean}
+        matched_at: {type: string,format: date-time}
     ChartCalculation:
       type: object
       properties:
@@ -430,4 +507,8 @@ components:
     BirthProfile: {description: Birth profile with active chart reference,content: {application/json: {schema: {type: object,properties: {data: {$ref: '#/components/schemas/BirthProfile'}}}}}}
     Chart: {description: Active deterministic chart and source profile,content: {application/json: {schema: {type: object,properties: {data: {type: object,properties: {birth_profile: {$ref: '#/components/schemas/BirthProfile'},chart: {$ref: '#/components/schemas/ChartCalculation'}}}}}}}}
     DatingProfile: {description: Current user's editable dating profile,content: {application/json: {schema: {type: object,properties: {data: {$ref: '#/components/schemas/DatingProfile'}}}}}}
+    Introductions: {description: Daily curated introductions,content: {application/json: {schema: {type: object,properties: {data: {type: object,properties: {items: {type: array,maxItems: 5,items: {$ref: '#/components/schemas/MatchmakingIntroduction'}}}}}}}}}
+    Decision: {description: Persisted decision and optional newly created mutual match,content: {application/json: {schema: {type: object,properties: {data: {type: object,properties: {decision: {enum: [like,pass]},match: {oneOf: [{$ref: '#/components/schemas/DatingMatch'},{type: 'null'}]}}}}}}}}
+    DatingMatch: {description: Mutual dating match,content: {application/json: {schema: {type: object,properties: {data: {$ref: '#/components/schemas/DatingMatch'}}}}}}
+    DatingMatches: {description: Active mutual dating matches,content: {application/json: {schema: {type: object,properties: {data: {type: object,properties: {items: {type: array,items: {$ref: '#/components/schemas/DatingMatch'}}}}}}}}}
     Relationship: {description: Private relationship summary and explicit generation states,content: {application/json: {schema: {type: object,properties: {data: {$ref: '#/components/schemas/Relationship'}}}}}}

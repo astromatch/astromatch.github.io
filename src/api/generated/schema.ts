@@ -493,6 +493,276 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/me/dating-profile/activate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Validate the complete dating profile and activate discovery */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                200: components["responses"]["Success"];
+                422: components["responses"]["Error"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/dating-profile/pause": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Immediately pause new discovery presentation */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                200: components["responses"]["Success"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/discovery/introductions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get up to five stable mutually eligible introductions for the UTC day */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                200: components["responses"]["Introductions"];
+                403: components["responses"]["Error"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/discovery/introductions/{user_id}/decision": {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /** Idempotently like or pass on an introduction */
+        put: {
+            parameters: {
+                query?: never;
+                header: {
+                    "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                };
+                path: {
+                    user_id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["IntroductionDecision"];
+                };
+            };
+            responses: {
+                200: components["responses"]["Decision"];
+                403: components["responses"]["Error"];
+                409: components["responses"]["Error"];
+                422: components["responses"]["Error"];
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/dating-matches": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List active mutual dating matches */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                200: components["responses"]["DatingMatches"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/dating-matches/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ID"];
+            };
+            cookie?: never;
+        };
+        /** Get a mutual match and server-resolved first-move access */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: components["parameters"]["ID"];
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                200: components["responses"]["DatingMatch"];
+                404: components["responses"]["Error"];
+            };
+        };
+        put?: never;
+        post?: never;
+        /** Idempotently close a mutual match */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: components["parameters"]["ID"];
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Match closed */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                404: components["responses"]["Error"];
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/safety/blocks/{user_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /** Block a user and immediately revoke discovery and match access */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    user_id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Block active */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                403: components["responses"]["Error"];
+            };
+        };
+        post?: never;
+        /** Remove the current user's block */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    user_id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Block removed */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/birth-profiles": {
         parameters: {
             query?: never;
@@ -2160,13 +2430,23 @@ export interface components {
             max_distance_km?: number;
             interested_in?: ("men" | "women" | "non_binary" | "everyone")[];
             preferences?: {
-                interested_in?: ("men" | "women" | "non_binary" | "everyone")[];
+                interested_in?: ("woman" | "man" | "non_binary" | "self_described")[];
             };
             hobbies?: string[];
             interests?: string[];
             /** @enum {string} */
             visibility?: "public" | "matches" | "private";
             discovery_paused?: boolean;
+            readonly discovery_active?: boolean;
+            /** @enum {string|null} */
+            relationship_intent?: "long_term" | "long_term_open" | "short_term" | "friendship" | "exploring" | null;
+            min_age?: number;
+            max_age?: number;
+            location_label?: string | null;
+            readonly has_discovery_location?: boolean;
+            allow_match_to_message_first?: boolean;
+            /** @enum {string} */
+            readonly review_status?: "pending" | "approved" | "rejected";
             dating_prompts?: components["schemas"]["DatingPrompt"][];
             questions?: components["schemas"]["DatingQuestion"][];
             photos?: components["schemas"]["DatingPhoto"][];
@@ -2175,12 +2455,20 @@ export interface components {
             username?: string;
             bio?: string;
             max_distance_km?: number;
-            interested_in?: ("men" | "women" | "non_binary" | "everyone")[];
+            interested_in?: ("woman" | "man" | "non_binary" | "self_described")[];
             hobbies?: string[];
             interests?: string[];
             /** @enum {string} */
             visibility?: "public" | "matches" | "private";
             discovery_paused?: boolean;
+            /** @enum {string|null} */
+            relationship_intent?: "long_term" | "long_term_open" | "short_term" | "friendship" | "exploring" | null;
+            min_age?: number;
+            max_age?: number;
+            location_label?: string | null;
+            latitude?: number;
+            longitude?: number;
+            allow_match_to_message_first?: boolean;
             dating_prompts?: {
                 prompt: string;
                 answer: string;
@@ -2196,6 +2484,44 @@ export interface components {
                 answer: string;
                 position: number;
             }[];
+        };
+        MatchmakingIntroduction: {
+            /** Format: uuid */
+            user_id: string;
+            display_name: string;
+            username?: string | null;
+            age: number;
+            bio?: string | null;
+            location_label?: string | null;
+            distance_km: number;
+            relationship_intent: string;
+            interests?: string[];
+            /** Format: uri */
+            photo_url?: string | null;
+            rank_score: number;
+            compatibility_score: number;
+            explanation_themes: string[];
+        };
+        IntroductionDecision: {
+            /** @enum {string} */
+            decision: "like" | "pass";
+            /** @description Valid only for a like; defaults to the profile setting. */
+            allow_match_to_message_first?: boolean;
+        };
+        DatingMatch: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            other_user_id: string;
+            other_display_name: string;
+            /** Format: uri */
+            other_photo_url?: string | null;
+            /** @enum {string} */
+            status: "active" | "unmatched" | "blocked";
+            can_current_user_initiate: boolean;
+            can_other_user_initiate: boolean;
+            /** Format: date-time */
+            matched_at: string;
         };
         ChartCalculation: {
             /** Format: uuid */
@@ -2465,6 +2791,58 @@ export interface components {
             content: {
                 "application/json": {
                     data?: components["schemas"]["DatingProfile"];
+                };
+            };
+        };
+        /** @description Daily curated introductions */
+        Introductions: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": {
+                    data?: {
+                        items?: components["schemas"]["MatchmakingIntroduction"][];
+                    };
+                };
+            };
+        };
+        /** @description Persisted decision and optional newly created mutual match */
+        Decision: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": {
+                    data?: {
+                        /** @enum {unknown} */
+                        decision?: "like" | "pass";
+                        match?: components["schemas"]["DatingMatch"] | null;
+                    };
+                };
+            };
+        };
+        /** @description Mutual dating match */
+        DatingMatch: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": {
+                    data?: components["schemas"]["DatingMatch"];
+                };
+            };
+        };
+        /** @description Active mutual dating matches */
+        DatingMatches: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": {
+                    data?: {
+                        items?: components["schemas"]["DatingMatch"][];
+                    };
                 };
             };
         };

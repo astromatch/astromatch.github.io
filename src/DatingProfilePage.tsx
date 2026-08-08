@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
-import { ArrowLeft, ArrowRight, Camera, MapPin, Pencil, Plus, Save, Sparkles, Star, Trash2, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Camera, MapPin, Pencil, Plus, Save, Search, Sparkles, Star, Trash2, X } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { AppShell } from './components';
 import { ProfileTabs } from './ProfileTabs';
@@ -7,10 +7,11 @@ import { accountApi, type AccountState } from './lib/account';
 import { ApiError } from './lib/api';
 import { datingProfileApi, type DatingPhoto, type DatingProfile, type DatingPrompt, type DatingQuestion, type ProfileVisibility } from './lib/datingProfile';
 import { auth } from './lib/firebase';
+import { searchPlaces, type PlaceResult } from './lib/geocoding';
 
 const promptIdeas=['The quickest way to my heart is…','A perfect Sunday looks like…','I’ll never stop talking about…'];
 const questionIdeas=['What are you looking for right now?','What makes a relationship feel safe?'];
-const emptyProfile:DatingProfile={username:null,bio:null,max_distance_km:null,preferences:{},hobbies:[],interests:[],visibility:'matches',discovery_paused:false,prompts:[],questions:[],photos:[]};
+const emptyProfile:DatingProfile={username:null,bio:null,max_distance_km:null,preferences:{},interested_in:[],hobbies:[],interests:[],visibility:'matches',discovery_paused:false,discovery_active:false,relationship_intent:null,min_age:18,max_age:50,location_label:null,has_discovery_location:false,allow_match_to_message_first:true,review_status:'approved',prompts:[],questions:[],photos:[]};
 const commaList=(value:FormDataEntryValue|null)=>String(value??'').split(',').map(item=>item.trim()).filter(Boolean);
 
 function errorMessage(error:unknown,fallback:string){
@@ -30,6 +31,10 @@ export function DatingProfilePage(){
   const [fieldErrors,setFieldErrors]=useState<Record<string,string>>({});
   const [prompts,setPrompts]=useState<DatingPrompt[]>([]);
   const [questions,setQuestions]=useState<DatingQuestion[]>([]);
+	const [placeQuery,setPlaceQuery]=useState('');
+	const [places,setPlaces]=useState<PlaceResult[]>([]);
+	const [selectedPlace,setSelectedPlace]=useState<PlaceResult|null>(null);
+	const [searchingPlaces,setSearchingPlaces]=useState(false);
   const fileInput=useRef<HTMLInputElement>(null);
 
   const load=useCallback(async()=>{
@@ -55,7 +60,7 @@ export function DatingProfilePage(){
   const accountProfile=account?.profile;
   const name=accountProfile?.preferred_name??accountProfile?.first_name??auth?.currentUser?.displayName??'Your profile';
   const username=profile.username?`@${profile.username}`:'Your dating profile';
-  const interestedIn=profile.preferences?.interested_in??[];
+  const interestedIn=profile.interested_in??profile.preferences?.interested_in??[];
   const allInterests=[...profile.hobbies,...profile.interests];
   const displayPrompts:DatingPrompt[]=profile.prompts.length?profile.prompts:promptIdeas.map((prompt,position)=>({prompt,answer:'',position}));
   const displayQuestions:DatingQuestion[]=profile.questions.length?profile.questions:questionIdeas.map((question,position)=>({question,answer:'',position}));
@@ -67,6 +72,11 @@ export function DatingProfilePage(){
   function updateQuestion(index:number,field:'question'|'answer',value:string){
     setQuestions(items=>items.map((item,itemIndex)=>itemIndex===index?{...item,[field]:value}:item));
   }
+	async function findPlaces(){
+		if(placeQuery.trim().length<2)return;
+		setSearchingPlaces(true);
+		try{setPlaces(await searchPlaces(placeQuery))}catch{setMessage('Place search is temporarily unavailable.')}finally{setSearchingPlaces(false)}
+	}
 
   async function saveProfile(event:FormEvent<HTMLFormElement>){
     event.preventDefault();
@@ -87,6 +97,11 @@ export function DatingProfilePage(){
         interests:commaList(form.get('interests')),
         visibility:String(form.get('visibility')) as ProfileVisibility,
         discovery_paused:form.get('discovery_paused')==='on',
+		relationship_intent:String(form.get('relationship_intent')) as DatingProfile['relationship_intent'],
+		min_age:Number(form.get('min_age')),
+		max_age:Number(form.get('max_age')),
+		...(selectedPlace?{location_label:[selectedPlace.city,selectedPlace.country].filter(Boolean).join(', '),latitude:selectedPlace.latitude,longitude:selectedPlace.longitude}:{}),
+		allow_match_to_message_first:form.get('allow_match_to_message_first')==='on',
         prompts:normalizedPrompts,
         questions:normalizedQuestions,
       });
@@ -178,6 +193,11 @@ export function DatingProfilePage(){
           <label>Hobbies <small>comma separated</small><input name="hobbies" defaultValue={profile.hobbies.join(', ')}/></label>
           <label>Interests <small>comma separated</small><input name="interests" defaultValue={profile.interests.join(', ')}/></label>
           <label>Visibility<select name="visibility" defaultValue={profile.visibility}><option value="public">Public</option><option value="matches">Matches only</option><option value="private">Private</option></select></label>
+		  <label>Relationship intent<select name="relationship_intent" defaultValue={profile.relationship_intent??''} required><option value="">Choose one</option><option value="long_term">Long-term relationship</option><option value="long_term_open">Long-term, open to short-term</option><option value="short_term">Short-term</option><option value="friendship">Friendship</option><option value="exploring">Still exploring</option></select></label>
+		  <label>Minimum age<input name="min_age" type="number" min="18" max="100" defaultValue={profile.min_age}/></label>
+		  <label>Maximum age<input name="max_age" type="number" min="18" max="100" defaultValue={profile.max_age}/></label>
+		  <fieldset className="full place-search"><legend>Discovery location</legend><div><input value={placeQuery} onChange={event=>setPlaceQuery(event.target.value)} placeholder={profile.location_label??'Search city and country'}/><button type="button" onClick={findPlaces} disabled={searchingPlaces}><Search/>{searchingPlaces?'Searching…':'Search'}</button></div>{places.length>0&&<select value={selectedPlace?.id??''} onChange={event=>setSelectedPlace(places.find(place=>place.id===event.target.value)??null)}><option value="">Choose a place</option>{places.map(place=><option key={place.id} value={place.id}>{place.label}</option>)}</select>}<small>Only an approximate label and distance are shown to other people.</small></fieldset>
+		  <label className="consent"><input name="allow_match_to_message_first" type="checkbox" defaultChecked={profile.allow_match_to_message_first}/> Let a match message first by default</label>
           <label className="consent"><input name="discovery_paused" type="checkbox" defaultChecked={profile.discovery_paused}/> Pause discovery</label>
         </div>
 

@@ -1,207 +1,1542 @@
-import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
-import { Navigate, Route, Routes, Link, useLocation, useNavigate, useParams } from 'react-router-dom';
-import { ArrowRight, Bookmark, ChevronRight, Circle, Download, Heart, LockKeyhole, MessageCircle, Plus, Send, ShieldCheck, Sparkles, Trash2 } from 'lucide-react';
-import { AppShell, Brand, ButtonLink, Disclaimer, Page, PageTracker, PublicHeader } from './components';
-import { peopleStore, type Person } from './lib/storage'; import { auth } from './lib/firebase'; import { firebaseReady } from './lib/env'; import { track, setAnalyticsConsent } from './lib/analytics';
-import { accountApi, normalizeTimezone, routeForAccount, type AccountState, type ProfileInput } from './lib/account';
-import { BirthProfileForm } from './BirthProfileForm';
-import { ChartPage } from './ChartPage';
-import { birthProfilesApi, type BirthProfileInput } from './lib/birthProfiles';
-import { ApiError } from './lib/api';
-import { DatingProfilePage } from './DatingProfilePage';
-import { ProfileTabs } from './ProfileTabs';
-import { BlueprintPage, NewRelationshipPage, PeoplePage, PersonPage, RelationshipPage, RelationshipReportPage, RelationshipsPage } from './RelationshipPages';
-import { wakeBackend } from './lib/backendWake';
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import {
+  Navigate,
+  Route,
+  Routes,
+  Link,
+  useLocation,
+  useNavigate,
+  useParams,
+} from "react-router-dom";
+import {
+  ArrowRight,
+  Bookmark,
+  ChevronRight,
+  Circle,
+  Download,
+  Heart,
+  LockKeyhole,
+  MessageCircle,
+  Plus,
+  Send,
+  ShieldCheck,
+  Sparkles,
+  Trash2,
+} from "lucide-react";
+import {
+  AppShell,
+  Brand,
+  ButtonLink,
+  Disclaimer,
+  Page,
+  PageTracker,
+  PublicHeader,
+} from "./components";
+import { peopleStore, type Person } from "./lib/storage";
+import { auth } from "./lib/firebase";
+import { firebaseReady } from "./lib/env";
+import { track, setAnalyticsConsent } from "./lib/analytics";
+import {
+  accountApi,
+  normalizeTimezone,
+  routeForAccount,
+  type AccountState,
+  type ProfileInput,
+} from "./lib/account";
+import { BirthProfileForm } from "./BirthProfileForm";
+import { ChartPage } from "./ChartPage";
+import { birthProfilesApi, type BirthProfileInput } from "./lib/birthProfiles";
+import { ApiError } from "./lib/api";
+import { DatingProfilePage } from "./DatingProfilePage";
+import { ProfileTabs } from "./ProfileTabs";
+import {
+  BlueprintPage,
+  NewRelationshipPage,
+  PeoplePage,
+  PersonPage,
+  RelationshipPage,
+  RelationshipReportPage,
+  RelationshipsPage,
+} from "./RelationshipPages";
+import { wakeBackend } from "./lib/backendWake";
+import { AskPage, SavedPage, SettingsPage } from "./ConnectedPages";
+import { relationshipsApi, type Relationship } from "./lib/relationships";
 
-const benefits=[['Private by design','Create personal profiles for the people in your life. Nothing becomes public.'],['More than a score','Explore attraction, communication, conflict and emotional rhythm in context.'],['Questions that go deeper','Ask about a connection or your own patterns—and get grounded reflections.']];
-function apiFormMessage(error:unknown,fallback:string){
-  if(error instanceof ApiError&&error.fields){
-    const details=Object.entries(error.fields).map(([field,message])=>`${field.replaceAll('_',' ')}: ${message}`).join(' · ');
-    if(details)return details;
+const benefits = [
+  [
+    "Private by design",
+    "Create personal profiles for the people in your life. Nothing becomes public.",
+  ],
+  [
+    "More than a score",
+    "Explore attraction, communication, conflict and emotional rhythm in context.",
+  ],
+  [
+    "Questions that go deeper",
+    "Ask about a connection or your own patterns—and get grounded reflections.",
+  ],
+];
+function apiFormMessage(error: unknown, fallback: string) {
+  if (error instanceof ApiError && error.fields) {
+    const details = Object.entries(error.fields)
+      .map(([field, message]) => `${field.replaceAll("_", " ")}: ${message}`)
+      .join(" · ");
+    if (details) return details;
   }
-  return error instanceof ApiError?error.message:fallback;
+  return error instanceof ApiError ? error.message : fallback;
 }
-function Landing(){useEffect(()=>wakeBackend(),[]);return <div className="public-page"><PublicHeader/><main><section className="hero"><div className="hero-copy"><p className="eyebrow">ASTROLOGY FOR REAL RELATIONSHIPS</p><h1>Understand the patterns <em>between you.</em></h1><p className="lead">Create private birth profiles, explore compatibility and ask personal questions about love, dating and connection.</p><div className="actions"><ButtonLink to="/signup">Create my profile <ArrowRight size={18}/></ButtonLink><a href="#how" className="quiet-link">See how it works</a></div><p className="micro"><LockKeyhole size={14}/> Your profiles are private and never discoverable.</p></div><CompatibilityPreview/></section><section className="manifesto"><p>Love is complicated.</p><h2>Your patterns don’t have to be.</h2></section><section className="benefit-grid">{benefits.map(([title,text],i)=><article key={title}><span>0{i+1}</span><h3>{title}</h3><p>{text}</p></article>)}</section><section id="how" className="how"><p className="eyebrow">HOW IT WORKS</p><h2>Two charts. One thoughtful conversation.</h2><div className="steps"><div><b>01</b><h3>Create your birth profile</h3><p>Tell us what you know. An unknown birth time is okay—we’ll explain what changes.</p></div><div><b>02</b><h3>Add someone privately</h3><p>A partner, crush, ex or friend. They are never notified or listed publicly.</p></div><div><b>03</b><h3>Explore the connection</h3><p>Read a nuanced report, then ask the questions that are actually on your mind.</p></div></div></section><section className="questions"><p className="eyebrow">QUESTIONS WORTH ASKING</p>{['What creates the strongest attraction between us?','Where might our communication break down?','What should I understand before committing?'].map(q=><p key={q}>{q}<ArrowRight/></p>)}</section><section className="privacy-callout"><ShieldCheck/><div><p className="eyebrow">PRIVATE MEANS PRIVATE</p><h2>Your love life isn’t content.</h2><p>Profiles you create are visible only to you. Share cards hide birth details and use aliases by default.</p></div></section><section className="final-cta"><p className="eyebrow">A DIFFERENT WAY TO REFLECT</p><h2>Start with what’s written in the sky. Keep the choice in your hands.</h2><ButtonLink to="/signup">Create my profile <ArrowRight size={18}/></ButtonLink></section></main><Footer/></div>}
-function CompatibilityPreview(){return <div className="preview"><div className="orbit"><span className="node one">A</span><span className="node two">M</span><div className="score"><small>COMPATIBILITY</small><strong>82</strong><span>/ 100</span></div></div><div className="preview-foot"><span><i/> Magnetic honesty</span><span><i/> Different rhythms</span></div></div>}
-function Footer(){return <footer><Brand/><p>Private, personalized astrology for your love life.</p><nav><Link to="/about">About</Link><Link to="/privacy">Privacy</Link><Link to="/terms">Terms</Link></nav><small>© 2026 AstroMatch</small></footer>}
-function Legal({kind}:{kind:'about'|'privacy'|'terms'}){const copy={about:['Astrology for the space between people.','AstroMatch is a private reflection tool for understanding attraction, communication and emotional patterns—without turning people into profiles for public consumption.'],privacy:['Privacy, in plain language.','Your birth profiles and conversations are private account data. We do not sell personal information or use birth details, names, locations, emails or question text for analytics.'],terms:['A thoughtful tool, not a certainty machine.','Use AstroMatch for personal reflection and entertainment. Interpretations are tendencies, not guarantees, and should never replace your judgment or professional advice.']}[kind];return <div className="public-page"><PublicHeader/><main className="prose"><p className="eyebrow">{kind.toUpperCase()}</p><h1>{copy[0]}</h1><p className="lead">{copy[1]}</p><Disclaimer/></main><Footer/></div>}
-function AuthPage({signup=false}:{signup?:boolean}){
-  const nav=useNavigate();
-  const [loading,setLoading]=useState(false);
-  const [message,setMessage]=useState('');
+function Landing() {
+  useEffect(() => wakeBackend(), []);
+  return (
+    <div className="public-page">
+      <PublicHeader />
+      <main>
+        <section className="hero">
+          <div className="hero-copy">
+            <p className="eyebrow">ASTROLOGY FOR REAL RELATIONSHIPS</p>
+            <h1>
+              Understand the patterns <em>between you.</em>
+            </h1>
+            <p className="lead">
+              Create private birth profiles, explore compatibility and ask
+              personal questions about love, dating and connection.
+            </p>
+            <div className="actions">
+              <ButtonLink to="/signup">
+                Create my profile <ArrowRight size={18} />
+              </ButtonLink>
+              <a href="#how" className="quiet-link">
+                See how it works
+              </a>
+            </div>
+            <p className="micro">
+              <LockKeyhole size={14} /> Your profiles are private and never
+              discoverable.
+            </p>
+          </div>
+          <CompatibilityPreview />
+        </section>
+        <section className="manifesto">
+          <p>Love is complicated.</p>
+          <h2>Your patterns don’t have to be.</h2>
+        </section>
+        <section className="benefit-grid">
+          {benefits.map(([title, text], i) => (
+            <article key={title}>
+              <span>0{i + 1}</span>
+              <h3>{title}</h3>
+              <p>{text}</p>
+            </article>
+          ))}
+        </section>
+        <section id="how" className="how">
+          <p className="eyebrow">HOW IT WORKS</p>
+          <h2>Two charts. One thoughtful conversation.</h2>
+          <div className="steps">
+            <div>
+              <b>01</b>
+              <h3>Create your birth profile</h3>
+              <p>
+                Tell us what you know. An unknown birth time is okay—we’ll
+                explain what changes.
+              </p>
+            </div>
+            <div>
+              <b>02</b>
+              <h3>Add someone privately</h3>
+              <p>
+                A partner, crush, ex or friend. They are never notified or
+                listed publicly.
+              </p>
+            </div>
+            <div>
+              <b>03</b>
+              <h3>Explore the connection</h3>
+              <p>
+                Read a nuanced report, then ask the questions that are actually
+                on your mind.
+              </p>
+            </div>
+          </div>
+        </section>
+        <section className="questions">
+          <p className="eyebrow">QUESTIONS WORTH ASKING</p>
+          {[
+            "What creates the strongest attraction between us?",
+            "Where might our communication break down?",
+            "What should I understand before committing?",
+          ].map((q) => (
+            <p key={q}>
+              {q}
+              <ArrowRight />
+            </p>
+          ))}
+        </section>
+        <section className="privacy-callout">
+          <ShieldCheck />
+          <div>
+            <p className="eyebrow">PRIVATE MEANS PRIVATE</p>
+            <h2>Your love life isn’t content.</h2>
+            <p>
+              Profiles you create are visible only to you. Share cards hide
+              birth details and use aliases by default.
+            </p>
+          </div>
+        </section>
+        <section className="final-cta">
+          <p className="eyebrow">A DIFFERENT WAY TO REFLECT</p>
+          <h2>
+            Start with what’s written in the sky. Keep the choice in your hands.
+          </h2>
+          <ButtonLink to="/signup">
+            Create my profile <ArrowRight size={18} />
+          </ButtonLink>
+        </section>
+      </main>
+      <Footer />
+    </div>
+  );
+}
+function CompatibilityPreview() {
+  return (
+    <div className="preview">
+      <div className="orbit">
+        <span className="node one">A</span>
+        <span className="node two">M</span>
+        <div className="score">
+          <small>COMPATIBILITY</small>
+          <strong>82</strong>
+          <span>/ 100</span>
+        </div>
+      </div>
+      <div className="preview-foot">
+        <span>
+          <i /> Magnetic honesty
+        </span>
+        <span>
+          <i /> Different rhythms
+        </span>
+      </div>
+    </div>
+  );
+}
+function Footer() {
+  return (
+    <footer>
+      <Brand />
+      <p>Private, personalized astrology for your love life.</p>
+      <nav>
+        <Link to="/about">About</Link>
+        <Link to="/privacy">Privacy</Link>
+        <Link to="/terms">Terms</Link>
+      </nav>
+      <small>© 2026 AstroMatch</small>
+    </footer>
+  );
+}
+function Legal({ kind }: { kind: "about" | "privacy" | "terms" }) {
+  const copy = {
+    about: [
+      "Astrology for the space between people.",
+      "AstroMatch is a private reflection tool for understanding attraction, communication and emotional patterns—without turning people into profiles for public consumption.",
+    ],
+    privacy: [
+      "Privacy, in plain language.",
+      "Your birth profiles and conversations are private account data. We do not sell personal information or use birth details, names, locations, emails or question text for analytics.",
+    ],
+    terms: [
+      "A thoughtful tool, not a certainty machine.",
+      "Use AstroMatch for personal reflection and entertainment. Interpretations are tendencies, not guarantees, and should never replace your judgment or professional advice.",
+    ],
+  }[kind];
+  return (
+    <div className="public-page">
+      <PublicHeader />
+      <main className="prose">
+        <p className="eyebrow">{kind.toUpperCase()}</p>
+        <h1>{copy[0]}</h1>
+        <p className="lead">{copy[1]}</p>
+        <Disclaimer />
+      </main>
+      <Footer />
+    </div>
+  );
+}
+function AuthPage({ signup = false }: { signup?: boolean }) {
+  const nav = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
 
-  function authErrorMessage(error:unknown){
-    const code=typeof error==='object'&&error!==null&&'code' in error?String(error.code):'';
-    if(code==='auth/popup-closed-by-user'||code==='auth/cancelled-popup-request')return '';
-    if(code==='auth/popup-blocked')return 'Your browser blocked the Google sign-in window. Allow pop-ups and try again.';
-    if(code==='auth/unauthorized-domain')return 'Google sign-in is not authorized for this website yet.';
-    if(code==='auth/operation-not-allowed')return 'Google sign-in is not enabled for this Firebase project yet.';
-    return 'We couldn’t complete that request. Check your details or try again shortly.';
+  function authErrorMessage(error: unknown) {
+    const code =
+      typeof error === "object" && error !== null && "code" in error
+        ? String(error.code)
+        : "";
+    if (
+      code === "auth/popup-closed-by-user" ||
+      code === "auth/cancelled-popup-request"
+    )
+      return "";
+    if (code === "auth/popup-blocked")
+      return "Your browser blocked the Google sign-in window. Allow pop-ups and try again.";
+    if (code === "auth/unauthorized-domain")
+      return "Google sign-in is not authorized for this website yet.";
+    if (code === "auth/operation-not-allowed")
+      return "Google sign-in is not enabled for this Firebase project yet.";
+    return "We couldn’t complete that request. Check your details or try again shortly.";
   }
 
-  async function submit(e:FormEvent<HTMLFormElement>){
+  async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if(!auth){setMessage('Firebase sign-in is not configured yet.');return}
+    if (!auth) {
+      setMessage("Firebase sign-in is not configured yet.");
+      return;
+    }
     setLoading(true);
-    setMessage('');
-    const form=new FormData(e.currentTarget);
-    try{
-      const {createUserWithEmailAndPassword,signInWithEmailAndPassword,sendEmailVerification}=await import('firebase/auth');
-      const credential=signup
-        ?await createUserWithEmailAndPassword(auth,String(form.get('email')),String(form.get('password')))
-        :await signInWithEmailAndPassword(auth,String(form.get('email')),String(form.get('password')));
-      if(signup)await sendEmailVerification(credential.user);
-      track(signup?'sign_up_completed':'login_completed',{method:'email'});
-      const account=await accountApi.get();
+    setMessage("");
+    const form = new FormData(e.currentTarget);
+    try {
+      const {
+        createUserWithEmailAndPassword,
+        signInWithEmailAndPassword,
+        sendEmailVerification,
+      } = await import("firebase/auth");
+      const credential = signup
+        ? await createUserWithEmailAndPassword(
+            auth,
+            String(form.get("email")),
+            String(form.get("password")),
+          )
+        : await signInWithEmailAndPassword(
+            auth,
+            String(form.get("email")),
+            String(form.get("password")),
+          );
+      if (signup) await sendEmailVerification(credential.user);
+      track(signup ? "sign_up_completed" : "login_completed", {
+        method: "email",
+      });
+      const account = await accountApi.get();
       nav(routeForAccount(account));
-    }catch(error){
+    } catch (error) {
       setMessage(authErrorMessage(error));
-    }finally{
+    } finally {
       setLoading(false);
     }
   }
 
-  async function continueWithGoogle(){
-    if(!auth){setMessage('Firebase sign-in is not configured yet.');return}
+  async function continueWithGoogle() {
+    if (!auth) {
+      setMessage("Firebase sign-in is not configured yet.");
+      return;
+    }
     setLoading(true);
-    setMessage('');
-    try{
-      const {GoogleAuthProvider,getAdditionalUserInfo,signInWithPopup}=await import('firebase/auth');
-      const provider=new GoogleAuthProvider();
-      provider.setCustomParameters({prompt:'select_account'});
-      const credential=await signInWithPopup(auth,provider);
-      const isNewUser=getAdditionalUserInfo(credential)?.isNewUser??false;
-      track(isNewUser?'sign_up_completed':'login_completed',{method:'google'});
-      const account=await accountApi.get();
+    setMessage("");
+    try {
+      const { GoogleAuthProvider, getAdditionalUserInfo, signInWithPopup } =
+        await import("firebase/auth");
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: "select_account" });
+      const credential = await signInWithPopup(auth, provider);
+      const isNewUser = getAdditionalUserInfo(credential)?.isNewUser ?? false;
+      track(isNewUser ? "sign_up_completed" : "login_completed", {
+        method: "google",
+      });
+      const account = await accountApi.get();
       nav(routeForAccount(account));
-    }catch(error){
+    } catch (error) {
       setMessage(authErrorMessage(error));
-    }finally{
+    } finally {
       setLoading(false);
     }
   }
 
-  return <div className="auth-page"><header><Brand/><Link to={signup?'/login':'/signup'}>{signup?'Sign in':'Create account'}</Link></header><main><p className="eyebrow">{signup?'BEGIN YOUR PROFILE':'WELCOME BACK'}</p><h1>{signup?'A little about you, then the stars.':'Return to your private space.'}</h1><button type="button" className="google" onClick={continueWithGoogle} disabled={!firebaseReady||loading}>{loading?'One moment…':'Continue with Google'}</button><div className="auth-divider"><span>or continue with email</span></div><form onSubmit={submit}><label>Email<input name="email" type="email" autoComplete="email" required/></label><label>Password<input name="password" type="password" minLength={8} autoComplete={signup?'new-password':'current-password'} required/><small>Use at least 8 characters.</small></label>{message&&<p role="alert" className="form-message">{message}</p>}<button className="button" disabled={loading}>{loading?'One moment…':signup?'Create account':'Sign in'} <ArrowRight size={18}/></button></form><p className="micro">By continuing, you agree to our <Link to="/terms">Terms</Link> and acknowledge our <Link to="/privacy">Privacy Policy</Link>.</p></main></div>
+  return (
+    <div className="auth-page">
+      <header>
+        <Brand />
+        <Link to={signup ? "/login" : "/signup"}>
+          {signup ? "Sign in" : "Create account"}
+        </Link>
+      </header>
+      <main>
+        <p className="eyebrow">
+          {signup ? "BEGIN YOUR PROFILE" : "WELCOME BACK"}
+        </p>
+        <h1>
+          {signup
+            ? "A little about you, then the stars."
+            : "Return to your private space."}
+        </h1>
+        <button
+          type="button"
+          className="google"
+          onClick={continueWithGoogle}
+          disabled={!firebaseReady || loading}
+        >
+          {loading ? "One moment…" : "Continue with Google"}
+        </button>
+        <div className="auth-divider">
+          <span>or continue with email</span>
+        </div>
+        <form onSubmit={submit}>
+          <label>
+            Email
+            <input name="email" type="email" autoComplete="email" required />
+          </label>
+          <label>
+            Password
+            <input
+              name="password"
+              type="password"
+              minLength={8}
+              autoComplete={signup ? "new-password" : "current-password"}
+              required
+            />
+            <small>Use at least 8 characters.</small>
+          </label>
+          {message && (
+            <p role="alert" className="form-message">
+              {message}
+            </p>
+          )}
+          <button className="button" disabled={loading}>
+            {loading ? "One moment…" : signup ? "Create account" : "Sign in"}{" "}
+            <ArrowRight size={18} />
+          </button>
+        </form>
+        <p className="micro">
+          By continuing, you agree to our <Link to="/terms">Terms</Link> and
+          acknowledge our <Link to="/privacy">Privacy Policy</Link>.
+        </p>
+      </main>
+    </div>
+  );
 }
-function Dashboard(){return <AppShell><Page eyebrow="THURSDAY · JULY 23" title="Good evening, Deepak."/><section className="daily"><span className="eyebrow">YOUR RELATIONSHIP WEATHER</span><h2>Say the true thing gently.</h2><p>Connection grows when honesty arrives without a demand for an immediate answer. Leave a little room around what you mean.</p><div className="tags"><span>Venus · expression</span><span>Moon · sensitivity</span></div></section><div className="dash-grid"><Link className="action-card" to="/ask"><MessageCircle/><div><span>ASK ASTROMATCH</span><h3>What’s on your mind?</h3></div><ChevronRight/></Link><Link className="action-card" to="/matches/new"><Heart/><div><span>NEW CONNECTION</span><h3>Explore a match</h3></div><ChevronRight/></Link></div><section className="section"><div className="section-head"><p className="eyebrow">LATEST MATCH</p><Link to="/matches">View all</Link></div><Link to="/matches/demo/report" className="match-card"><div><span>A</span><span>M</span></div><section><small>YOU + MAYA</small><h3>A bond built on candor</h3><p>Strong emotional recognition · Different pacing</p></section><strong>82</strong></Link></section><p className="fixture-note">Preview content is illustrative until your API is connected.</p></AppShell>}
-export function People(){const [people,setPeople]=useState<Person[]>(peopleStore.list());function remove(id:string){if(confirm('Delete this private profile?')){peopleStore.remove(id);setPeople(peopleStore.list());track('person_deleted')}}return <AppShell><Page eyebrow="PRIVATE PROFILES" title="People" action={<Link className="icon-button" to="/people/new" aria-label="Add a person"><Plus/></Link>}/><p className="page-intro">The people you add are never notified and never appear publicly.</p>{people.length?<div className="list">{people.map(p=><article className="list-row" key={p.id}><Link to={`/people/${p.id}`}><span className="avatar">{p.name[0]}</span><div><h3>{p.name}</h3><p>{p.relationship} · {p.birthplace}</p></div></Link><button onClick={()=>remove(p.id)} aria-label={`Delete ${p.name}`}><Trash2/></button></article>)}</div>:<Empty icon={<Heart/>} title="No one here yet" text="Add someone privately when there’s a connection you want to understand." action="Add a person" to="/people/new"/>}</AppShell>}
-export function PersonForm(){const {personId}=useParams();const existing=peopleStore.list().find(p=>p.id===personId);const nav=useNavigate();function submit(e:FormEvent<HTMLFormElement>){e.preventDefault();const f=new FormData(e.currentTarget);peopleStore.save({id:existing?.id??crypto.randomUUID(),name:String(f.get('name')),relationship:String(f.get('relationship')),birthDate:String(f.get('birthDate')),birthTimeStatus:String(f.get('birthTimeStatus')) as Person['birthTimeStatus'],birthplace:String(f.get('birthplace')),notes:String(f.get('notes'))});track(existing?'person_updated':'person_created',{relationship_type:String(f.get('relationship')),birth_time_quality:String(f.get('birthTimeStatus'))});nav('/people')}return <AppShell><Page eyebrow={existing?'EDIT PROFILE':'ADD SOMEONE'} title={existing?existing.name:'Who are we looking at?'}/><form className="stack-form" onSubmit={submit}><label>Private name or alias<input name="name" defaultValue={existing?.name} required/></label><label>Relationship<select name="relationship" defaultValue={existing?.relationship}><option>Partner</option><option>Crush</option><option>Ex</option><option>Friend</option><option>Custom</option></select></label><label>Date of birth<input name="birthDate" type="date" defaultValue={existing?.birthDate} required/></label><fieldset><legend>Birth time</legend><div className="choice-row">{['exact','approximate','unknown'].map(x=><label key={x}><input type="radio" name="birthTimeStatus" value={x} defaultChecked={(existing?.birthTimeStatus??'unknown')===x}/>{x}</label>)}</div><small>Without an exact time, house and ascendant interpretations may be less precise.</small></fieldset><label>Birthplace<input name="birthplace" defaultValue={existing?.birthplace} placeholder="City, country" required/><small>Manual entry for now. Confirm the normalized place when lookup is connected.</small></label><label>Notes <span>optional</span><textarea name="notes" defaultValue={existing?.notes}/></label><div className="notice"><LockKeyhole/>This person is not notified. Avoid sensitive information without their permission.</div><button className="button">Save private profile</button></form></AppShell>}
-function Empty({icon,title,text,action,to}:{icon:ReactNode;title:string;text:string;action:string;to:string}){return <div className="empty">{icon}<h2>{title}</h2><p>{text}</p><ButtonLink to={to}>{action}</ButtonLink></div>}
-export function Matches(){return <AppShell><Page eyebrow="CONNECTIONS" title="Your matches" action={<Link className="icon-button" to="/matches/new"><Plus/></Link>}/><div className="list"><Link className="match-card" to="/matches/demo/report"><div><span>A</span><span>M</span></div><section><small>OVERALL COMPATIBILITY</small><h3>You + Maya</h3><p>Communication · Attraction · Emotional rhythm</p></section><strong>82</strong></Link></div><p className="fixture-note">Preview report · illustrative data</p></AppShell>}
-export function NewMatch(){const [phase,setPhase]=useState('');const nav=useNavigate();function generate(e:FormEvent){e.preventDefault();track('match_generation_requested');const phases=['Preparing both charts','Comparing placements','Finding major themes','Writing your report'];let i=0;setPhase(phases[0]);const timer=setInterval(()=>{i++;if(i===phases.length){clearInterval(timer);track('match_generation_completed',{focus:'overall',birth_data_quality:'mixed'});nav('/matches/demo/report')}else setPhase(phases[i])},650)}return <AppShell><Page eyebrow="NEW MATCH" title="Explore a connection"/><form className="stack-form" onSubmit={generate}><label>Your profile<select><option>Deepak · birth profile</option></select></label><label>The other person<select required><option value="">Choose a private profile</option>{peopleStore.list().map(p=><option key={p.id}>{p.name}</option>)}<option>Maya · preview</option></select></label><fieldset><legend>What do you want to understand?</legend><div className="radio-stack">{['Overall compatibility','Attraction','Emotional compatibility','Communication','Conflict patterns','Long-term potential'].map((x,i)=><label key={x}><input type="radio" name="focus" defaultChecked={!i}/><span>{x}</span><Circle/></label>)}</div></fieldset><div className="notice"><Sparkles/>One profile has an unknown birth time. We’ll avoid house-based certainty and label the report’s confidence.</div><button className="button">Generate report</button>{phase&&<div className="generation" role="status" aria-live="polite"><span/><p>{phase}</p></div>}</form></AppShell>}
-export function Report(){const sections=[['Strongest connection','You make it easier for each other to name what usually stays unspoken. Curiosity is a shared love language here.'],['Primary friction','One of you reaches for clarity while the other needs room. The pattern works best when space has a clear return point.'],['Attraction','Warmth and intrigue arrive together. Venus–Mars contact suggests a lively pull, while Mercury keeps attraction mentally engaged.'],['Emotional rhythm','There is genuine recognition, though your nervous systems may move at different speeds. Neither pace is the “right” one.'],['Communication','Direct questions help. Assumptions do not. A strong Mercury link supports repair when both people stay specific.'],['Conflict and repair','Pause before solving. Name the feeling, then the request. This connection benefits from structure after intensity.'],['Long-term tendencies','Shared growth is possible when independence is treated as part of intimacy—not evidence against it.']];return <AppShell><Page eyebrow="COMPATIBILITY REPORT" title="You + Maya"/><div className="report-score"><div><small>OVERALL</small><strong>82</strong><span>/100</span></div><section><span className="quality">MODERATE CONFIDENCE</span><h2>A bond built on candor</h2><p>Strong mutual recognition with different emotional pacing.</p></section></div><div className="score-strip">{[['Attraction',88],['Emotional',76],['Communication',84],['Long-term',78]].map(([x,n])=><div key={x}><span>{x}</span><b>{n}</b><i style={{width:`${n}%`}}/></div>)}</div><div className="report-body">{sections.map(([title,text],i)=><section key={title}><span>0{i+1}</span><div><h2>{title}</h2><p>{text}</p></div></section>)}<section><span>08</span><div><h2>Reflection prompts</h2><ul><li>What does reassurance look like to each of you?</li><li>How can you ask for space without creating ambiguity?</li><li>Which differences feel generative rather than threatening?</li></ul></div></section><section><span>09</span><div><h2>Astrological basis</h2><p>Venus trine Mars · Mercury sextile Mercury · Moon square Saturn. Birth-time uncertainty limits house and ascendant interpretation.</p></div></section></div><div className="report-actions"><ButtonLink to="/ask">Ask about this match</ButtonLink><button className="button secondary"><Bookmark/> Save</button><button className="button secondary"><Download/> Share card</button></div><Disclaimer/></AppShell>}
-function Ask(){const prompts=['Why do I lose interest once someone likes me?','What creates the strongest attraction between us?','Where might our communication break down?'];const [messages,setMessages]=useState<{role:'me'|'astro';text:string}[]>([]);const [text,setText]=useState('');const [waiting,setWaiting]=useState(false);useEffect(()=>track('ask_screen_viewed'),[]);function submit(e:FormEvent){e.preventDefault();if(!text.trim())return;const q=text;setMessages(m=>[...m,{role:'me',text:q}]);setText('');setWaiting(true);track('astrology_question_submitted',{context_type:'love_life'});setTimeout(()=>{setMessages(m=>[...m,{role:'astro',text:'Your chart suggests that attraction can feel safest while it remains open-ended. When interest becomes certain, closeness may bring old questions about autonomy to the surface. This is a pattern to notice—not a verdict. [Venus–Uranus; Moon–Saturn]'}]);setWaiting(false);track('astrology_answer_completed',{context_type:'love_life'})},900)}return <AppShell><div className="chat"><Page eyebrow="A PRIVATE CONVERSATION" title="Ask AstroMatch"/><div className="mode-row"><button className="active">My love life</button><button>This match</button><button>Communication</button></div><div className="messages" aria-live="polite">{!messages.length&&<div className="chat-intro"><Sparkles/><h2>What are you trying to understand?</h2><p>Ask about a pattern, a connection or the part you can’t quite name.</p><div>{prompts.map(p=><button key={p} onClick={()=>{setText(p);track('suggested_question_clicked',{category:'love_life'})}}>{p}<ArrowRight/></button>)}</div></div>}{messages.map((m,i)=><div key={i} className={`message ${m.role}`}>{m.role==='astro'&&<small>ASTROMATCH · INTERPRETATION</small>}<p>{m.text}</p>{m.role==='astro'&&<div className="feedback"><span>Was this helpful?</span><button>Yes</button><button>Not quite</button></div>}</div>)}{waiting&&<div className="thinking"><i/><i/><i/> Waking AstroMatch up…</div>}</div><form className="composer" onSubmit={submit}><textarea value={text} onChange={e=>setText(e.target.value)} rows={1} placeholder="Ask what’s on your mind…" aria-label="Your question"/><button disabled={!text.trim()||waiting} aria-label="Send"><Send/></button></form></div></AppShell>}
-function Saved(){return <AppShell><Page eyebrow="YOUR LIBRARY" title="Saved"/><div className="tabs"><button className="active">Reports</button><button>Conversations</button><button>Share cards</button></div><Empty icon={<Bookmark/>} title="Keep the useful parts close" text="Reports and conversations you save will live here." action="Explore a match" to="/matches"/></AppShell>}
-function Settings(){const [consent,setConsent]=useState(localStorage.getItem('am:analytics-consent')==='granted');return <AppShell><div className="settings-profile-shell"><Page eyebrow="YOUR ACCOUNT" title="Settings"/><ProfileTabs/><div className="settings-list"><section><h2>Privacy</h2><label className="toggle">Anonymous product analytics<input type="checkbox" checked={consent} onChange={e=>{setConsent(e.target.checked);setAnalyticsConsent(e.target.checked)}}/><i/></label><p>Never includes names, email, birth data, locations or question text.</p></section><section><h2>Dating profile</h2><button disabled>Photos <span>Backend support needed</span></button><button disabled>Prompts and answers <span>Backend support needed</span></button><button disabled>Discovery preferences <span>Backend support needed</span></button></section><section><h2>Account</h2><button>Export my data <span>Coming soon</span></button><button>Notifications <span>Coming soon</span></button><button onClick={async()=>{await auth?.signOut();track('logout_completed')}}>Log out</button><button className="danger">Delete account</button></section><section><h2>Legal</h2><Link to="/privacy">Privacy policy <ChevronRight/></Link><Link to="/terms">Terms of use <ChevronRight/></Link></section></div></div></AppShell>}
-function Onboarding(){
-  const nav=useNavigate();
-  const [account,setAccount]=useState<AccountState|null>(null);
-  const [loading,setLoading]=useState(true);
-  const [message,setMessage]=useState('');
+function Dashboard() {
+  const [relationships, setRelationships] = useState<Relationship[]>([]);
+  const [preferredName, setPreferredName] = useState("");
+  useEffect(() => {
+    void Promise.all([accountApi.get(), relationshipsApi.all()]).then(
+      ([account, items]) => {
+        setPreferredName(account.profile?.preferred_name ?? "");
+        setRelationships(items);
+      },
+    );
+  }, []);
+  const latest = relationships[0];
+  return (
+    <AppShell>
+      <Page
+        eyebrow={new Intl.DateTimeFormat(undefined, {
+          weekday: "long",
+          month: "long",
+          day: "numeric",
+        }).format(new Date())}
+        title={`Welcome${preferredName ? `, ${preferredName}` : ""}.`}
+      />
+      <section className="daily">
+        <span className="eyebrow">YOUR RELATIONSHIP WEATHER</span>
+        <h2>Say the true thing gently.</h2>
+        <p>
+          Connection grows when honesty arrives without a demand for an
+          immediate answer. Leave a little room around what you mean.
+        </p>
+        <div className="tags">
+          <span>Venus · expression</span>
+          <span>Moon · sensitivity</span>
+        </div>
+      </section>
+      <div className="dash-grid">
+        <Link className="action-card" to="/ask">
+          <MessageCircle />
+          <div>
+            <span>ASK ASTROMATCH</span>
+            <h3>What’s on your mind?</h3>
+          </div>
+          <ChevronRight />
+        </Link>
+        <Link className="action-card" to="/relationships/new">
+          <Heart />
+          <div>
+            <span>NEW CONNECTION</span>
+            <h3>Explore a relationship</h3>
+          </div>
+          <ChevronRight />
+        </Link>
+      </div>
+      <section className="section">
+        <div className="section-head">
+          <p className="eyebrow">LATEST RELATIONSHIP</p>
+          <Link to="/relationships">View all</Link>
+        </div>
+        {latest ? (
+          <Link to={`/relationships/${latest.id}`} className="match-card">
+            <div>
+              <span>A</span>
+              <span>{latest.person?.displayName.slice(0, 1) ?? "·"}</span>
+            </div>
+            <section>
+              <small>PRIVATE RELATIONSHIP</small>
+              <h3>
+                {latest.title ??
+                  latest.person?.displayName ??
+                  "Relationship analysis"}
+              </h3>
+              <p>
+                {latest.headline ??
+                  latest.qualitativeLabel ??
+                  latest.compatibilityStatus.replaceAll("_", " ")}
+              </p>
+            </section>
+            {typeof latest.score === "number" && (
+              <strong>{Math.round(latest.score)}</strong>
+            )}
+          </Link>
+        ) : (
+          <div className="empty">
+            <Heart />
+            <h2>Your relationship space is ready</h2>
+            <p>Add someone privately to begin a compatibility analysis.</p>
+            <ButtonLink to="/relationships/new">Start an analysis</ButtonLink>
+          </div>
+        )}
+      </section>
+    </AppShell>
+  );
+}
+export function People() {
+  const [people, setPeople] = useState<Person[]>(peopleStore.list());
+  function remove(id: string) {
+    if (confirm("Delete this private profile?")) {
+      peopleStore.remove(id);
+      setPeople(peopleStore.list());
+      track("person_deleted");
+    }
+  }
+  return (
+    <AppShell>
+      <Page
+        eyebrow="PRIVATE PROFILES"
+        title="People"
+        action={
+          <Link
+            className="icon-button"
+            to="/people/new"
+            aria-label="Add a person"
+          >
+            <Plus />
+          </Link>
+        }
+      />
+      <p className="page-intro">
+        The people you add are never notified and never appear publicly.
+      </p>
+      {people.length ? (
+        <div className="list">
+          {people.map((p) => (
+            <article className="list-row" key={p.id}>
+              <Link to={`/people/${p.id}`}>
+                <span className="avatar">{p.name[0]}</span>
+                <div>
+                  <h3>{p.name}</h3>
+                  <p>
+                    {p.relationship} · {p.birthplace}
+                  </p>
+                </div>
+              </Link>
+              <button
+                onClick={() => remove(p.id)}
+                aria-label={`Delete ${p.name}`}
+              >
+                <Trash2 />
+              </button>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <Empty
+          icon={<Heart />}
+          title="No one here yet"
+          text="Add someone privately when there’s a connection you want to understand."
+          action="Add a person"
+          to="/people/new"
+        />
+      )}
+    </AppShell>
+  );
+}
+export function PersonForm() {
+  const { personId } = useParams();
+  const existing = peopleStore.list().find((p) => p.id === personId);
+  const nav = useNavigate();
+  function submit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const f = new FormData(e.currentTarget);
+    peopleStore.save({
+      id: existing?.id ?? crypto.randomUUID(),
+      name: String(f.get("name")),
+      relationship: String(f.get("relationship")),
+      birthDate: String(f.get("birthDate")),
+      birthTimeStatus: String(
+        f.get("birthTimeStatus"),
+      ) as Person["birthTimeStatus"],
+      birthplace: String(f.get("birthplace")),
+      notes: String(f.get("notes")),
+    });
+    track(existing ? "person_updated" : "person_created", {
+      relationship_type: String(f.get("relationship")),
+      birth_time_quality: String(f.get("birthTimeStatus")),
+    });
+    nav("/people");
+  }
+  return (
+    <AppShell>
+      <Page
+        eyebrow={existing ? "EDIT PROFILE" : "ADD SOMEONE"}
+        title={existing ? existing.name : "Who are we looking at?"}
+      />
+      <form className="stack-form" onSubmit={submit}>
+        <label>
+          Private name or alias
+          <input name="name" defaultValue={existing?.name} required />
+        </label>
+        <label>
+          Relationship
+          <select name="relationship" defaultValue={existing?.relationship}>
+            <option>Partner</option>
+            <option>Crush</option>
+            <option>Ex</option>
+            <option>Friend</option>
+            <option>Custom</option>
+          </select>
+        </label>
+        <label>
+          Date of birth
+          <input
+            name="birthDate"
+            type="date"
+            defaultValue={existing?.birthDate}
+            required
+          />
+        </label>
+        <fieldset>
+          <legend>Birth time</legend>
+          <div className="choice-row">
+            {["exact", "approximate", "unknown"].map((x) => (
+              <label key={x}>
+                <input
+                  type="radio"
+                  name="birthTimeStatus"
+                  value={x}
+                  defaultChecked={
+                    (existing?.birthTimeStatus ?? "unknown") === x
+                  }
+                />
+                {x}
+              </label>
+            ))}
+          </div>
+          <small>
+            Without an exact time, house and ascendant interpretations may be
+            less precise.
+          </small>
+        </fieldset>
+        <label>
+          Birthplace
+          <input
+            name="birthplace"
+            defaultValue={existing?.birthplace}
+            placeholder="City, country"
+            required
+          />
+          <small>
+            Manual entry for now. Confirm the normalized place when lookup is
+            connected.
+          </small>
+        </label>
+        <label>
+          Notes <span>optional</span>
+          <textarea name="notes" defaultValue={existing?.notes} />
+        </label>
+        <div className="notice">
+          <LockKeyhole />
+          This person is not notified. Avoid sensitive information without their
+          permission.
+        </div>
+        <button className="button">Save private profile</button>
+      </form>
+    </AppShell>
+  );
+}
+function Empty({
+  icon,
+  title,
+  text,
+  action,
+  to,
+}: {
+  icon: ReactNode;
+  title: string;
+  text: string;
+  action: string;
+  to: string;
+}) {
+  return (
+    <div className="empty">
+      {icon}
+      <h2>{title}</h2>
+      <p>{text}</p>
+      <ButtonLink to={to}>{action}</ButtonLink>
+    </div>
+  );
+}
+export function Matches() {
+  return (
+    <AppShell>
+      <Page
+        eyebrow="CONNECTIONS"
+        title="Your matches"
+        action={
+          <Link className="icon-button" to="/matches/new">
+            <Plus />
+          </Link>
+        }
+      />
+      <div className="list">
+        <Link className="match-card" to="/matches/demo/report">
+          <div>
+            <span>A</span>
+            <span>M</span>
+          </div>
+          <section>
+            <small>OVERALL COMPATIBILITY</small>
+            <h3>You + Maya</h3>
+            <p>Communication · Attraction · Emotional rhythm</p>
+          </section>
+          <strong>82</strong>
+        </Link>
+      </div>
+      <p className="fixture-note">Preview report · illustrative data</p>
+    </AppShell>
+  );
+}
+export function NewMatch() {
+  const [phase, setPhase] = useState("");
+  const nav = useNavigate();
+  function generate(e: FormEvent) {
+    e.preventDefault();
+    track("match_generation_requested");
+    const phases = [
+      "Preparing both charts",
+      "Comparing placements",
+      "Finding major themes",
+      "Writing your report",
+    ];
+    let i = 0;
+    setPhase(phases[0]);
+    const timer = setInterval(() => {
+      i++;
+      if (i === phases.length) {
+        clearInterval(timer);
+        track("match_generation_completed", {
+          focus: "overall",
+          birth_data_quality: "mixed",
+        });
+        nav("/matches/demo/report");
+      } else setPhase(phases[i]);
+    }, 650);
+  }
+  return (
+    <AppShell>
+      <Page eyebrow="NEW MATCH" title="Explore a connection" />
+      <form className="stack-form" onSubmit={generate}>
+        <label>
+          Your profile
+          <select>
+            <option>Deepak · birth profile</option>
+          </select>
+        </label>
+        <label>
+          The other person
+          <select required>
+            <option value="">Choose a private profile</option>
+            {peopleStore.list().map((p) => (
+              <option key={p.id}>{p.name}</option>
+            ))}
+            <option>Maya · preview</option>
+          </select>
+        </label>
+        <fieldset>
+          <legend>What do you want to understand?</legend>
+          <div className="radio-stack">
+            {[
+              "Overall compatibility",
+              "Attraction",
+              "Emotional compatibility",
+              "Communication",
+              "Conflict patterns",
+              "Long-term potential",
+            ].map((x, i) => (
+              <label key={x}>
+                <input type="radio" name="focus" defaultChecked={!i} />
+                <span>{x}</span>
+                <Circle />
+              </label>
+            ))}
+          </div>
+        </fieldset>
+        <div className="notice">
+          <Sparkles />
+          One profile has an unknown birth time. We’ll avoid house-based
+          certainty and label the report’s confidence.
+        </div>
+        <button className="button">Generate report</button>
+        {phase && (
+          <div className="generation" role="status" aria-live="polite">
+            <span />
+            <p>{phase}</p>
+          </div>
+        )}
+      </form>
+    </AppShell>
+  );
+}
+export function Report() {
+  const sections = [
+    [
+      "Strongest connection",
+      "You make it easier for each other to name what usually stays unspoken. Curiosity is a shared love language here.",
+    ],
+    [
+      "Primary friction",
+      "One of you reaches for clarity while the other needs room. The pattern works best when space has a clear return point.",
+    ],
+    [
+      "Attraction",
+      "Warmth and intrigue arrive together. Venus–Mars contact suggests a lively pull, while Mercury keeps attraction mentally engaged.",
+    ],
+    [
+      "Emotional rhythm",
+      "There is genuine recognition, though your nervous systems may move at different speeds. Neither pace is the “right” one.",
+    ],
+    [
+      "Communication",
+      "Direct questions help. Assumptions do not. A strong Mercury link supports repair when both people stay specific.",
+    ],
+    [
+      "Conflict and repair",
+      "Pause before solving. Name the feeling, then the request. This connection benefits from structure after intensity.",
+    ],
+    [
+      "Long-term tendencies",
+      "Shared growth is possible when independence is treated as part of intimacy—not evidence against it.",
+    ],
+  ];
+  return (
+    <AppShell>
+      <Page eyebrow="COMPATIBILITY REPORT" title="You + Maya" />
+      <div className="report-score">
+        <div>
+          <small>OVERALL</small>
+          <strong>82</strong>
+          <span>/100</span>
+        </div>
+        <section>
+          <span className="quality">MODERATE CONFIDENCE</span>
+          <h2>A bond built on candor</h2>
+          <p>Strong mutual recognition with different emotional pacing.</p>
+        </section>
+      </div>
+      <div className="score-strip">
+        {[
+          ["Attraction", 88],
+          ["Emotional", 76],
+          ["Communication", 84],
+          ["Long-term", 78],
+        ].map(([x, n]) => (
+          <div key={x}>
+            <span>{x}</span>
+            <b>{n}</b>
+            <i style={{ width: `${n}%` }} />
+          </div>
+        ))}
+      </div>
+      <div className="report-body">
+        {sections.map(([title, text], i) => (
+          <section key={title}>
+            <span>0{i + 1}</span>
+            <div>
+              <h2>{title}</h2>
+              <p>{text}</p>
+            </div>
+          </section>
+        ))}
+        <section>
+          <span>08</span>
+          <div>
+            <h2>Reflection prompts</h2>
+            <ul>
+              <li>What does reassurance look like to each of you?</li>
+              <li>How can you ask for space without creating ambiguity?</li>
+              <li>
+                Which differences feel generative rather than threatening?
+              </li>
+            </ul>
+          </div>
+        </section>
+        <section>
+          <span>09</span>
+          <div>
+            <h2>Astrological basis</h2>
+            <p>
+              Venus trine Mars · Mercury sextile Mercury · Moon square Saturn.
+              Birth-time uncertainty limits house and ascendant interpretation.
+            </p>
+          </div>
+        </section>
+      </div>
+      <div className="report-actions">
+        <ButtonLink to="/ask">Ask about this match</ButtonLink>
+        <button className="button secondary">
+          <Bookmark /> Save
+        </button>
+        <button className="button secondary">
+          <Download /> Share card
+        </button>
+      </div>
+      <Disclaimer />
+    </AppShell>
+  );
+}
+export function Ask() {
+  const prompts = [
+    "Why do I lose interest once someone likes me?",
+    "What creates the strongest attraction between us?",
+    "Where might our communication break down?",
+  ];
+  const [messages, setMessages] = useState<
+    { role: "me" | "astro"; text: string }[]
+  >([]);
+  const [text, setText] = useState("");
+  const [waiting, setWaiting] = useState(false);
+  useEffect(() => track("ask_screen_viewed"), []);
+  function submit(e: FormEvent) {
+    e.preventDefault();
+    if (!text.trim()) return;
+    const q = text;
+    setMessages((m) => [...m, { role: "me", text: q }]);
+    setText("");
+    setWaiting(true);
+    track("astrology_question_submitted", { context_type: "love_life" });
+    setTimeout(() => {
+      setMessages((m) => [
+        ...m,
+        {
+          role: "astro",
+          text: "Your chart suggests that attraction can feel safest while it remains open-ended. When interest becomes certain, closeness may bring old questions about autonomy to the surface. This is a pattern to notice—not a verdict. [Venus–Uranus; Moon–Saturn]",
+        },
+      ]);
+      setWaiting(false);
+      track("astrology_answer_completed", { context_type: "love_life" });
+    }, 900);
+  }
+  return (
+    <AppShell>
+      <div className="chat">
+        <Page eyebrow="A PRIVATE CONVERSATION" title="Ask AstroMatch" />
+        <div className="mode-row">
+          <button className="active">My love life</button>
+          <button>This match</button>
+          <button>Communication</button>
+        </div>
+        <div className="messages" aria-live="polite">
+          {!messages.length && (
+            <div className="chat-intro">
+              <Sparkles />
+              <h2>What are you trying to understand?</h2>
+              <p>
+                Ask about a pattern, a connection or the part you can’t quite
+                name.
+              </p>
+              <div>
+                {prompts.map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => {
+                      setText(p);
+                      track("suggested_question_clicked", {
+                        category: "love_life",
+                      });
+                    }}
+                  >
+                    {p}
+                    <ArrowRight />
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          {messages.map((m, i) => (
+            <div key={i} className={`message ${m.role}`}>
+              {m.role === "astro" && <small>ASTROMATCH · INTERPRETATION</small>}
+              <p>{m.text}</p>
+              {m.role === "astro" && (
+                <div className="feedback">
+                  <span>Was this helpful?</span>
+                  <button>Yes</button>
+                  <button>Not quite</button>
+                </div>
+              )}
+            </div>
+          ))}
+          {waiting && (
+            <div className="thinking">
+              <i />
+              <i />
+              <i /> Waking AstroMatch up…
+            </div>
+          )}
+        </div>
+        <form className="composer" onSubmit={submit}>
+          <textarea
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            rows={1}
+            placeholder="Ask what’s on your mind…"
+            aria-label="Your question"
+          />
+          <button disabled={!text.trim() || waiting} aria-label="Send">
+            <Send />
+          </button>
+        </form>
+      </div>
+    </AppShell>
+  );
+}
+export function Saved() {
+  return (
+    <AppShell>
+      <Page eyebrow="YOUR LIBRARY" title="Saved" />
+      <div className="tabs">
+        <button className="active">Reports</button>
+        <button>Conversations</button>
+        <button>Share cards</button>
+      </div>
+      <Empty
+        icon={<Bookmark />}
+        title="Keep the useful parts close"
+        text="Reports and conversations you save will live here."
+        action="Explore a match"
+        to="/matches"
+      />
+    </AppShell>
+  );
+}
+export function Settings() {
+  const [consent, setConsent] = useState(
+    localStorage.getItem("am:analytics-consent") === "granted",
+  );
+  return (
+    <AppShell>
+      <div className="settings-profile-shell">
+        <Page eyebrow="YOUR ACCOUNT" title="Settings" />
+        <ProfileTabs />
+        <div className="settings-list">
+          <section>
+            <h2>Privacy</h2>
+            <label className="toggle">
+              Anonymous product analytics
+              <input
+                type="checkbox"
+                checked={consent}
+                onChange={(e) => {
+                  setConsent(e.target.checked);
+                  setAnalyticsConsent(e.target.checked);
+                }}
+              />
+              <i />
+            </label>
+            <p>
+              Never includes names, email, birth data, locations or question
+              text.
+            </p>
+          </section>
+          <section>
+            <h2>Dating profile</h2>
+            <button disabled>
+              Photos <span>Backend support needed</span>
+            </button>
+            <button disabled>
+              Prompts and answers <span>Backend support needed</span>
+            </button>
+            <button disabled>
+              Discovery preferences <span>Backend support needed</span>
+            </button>
+          </section>
+          <section>
+            <h2>Account</h2>
+            <button>
+              Export my data <span>Coming soon</span>
+            </button>
+            <button>
+              Notifications <span>Coming soon</span>
+            </button>
+            <button
+              onClick={async () => {
+                await auth?.signOut();
+                track("logout_completed");
+              }}
+            >
+              Log out
+            </button>
+            <button className="danger">Delete account</button>
+          </section>
+          <section>
+            <h2>Legal</h2>
+            <Link to="/privacy">
+              Privacy policy <ChevronRight />
+            </Link>
+            <Link to="/terms">
+              Terms of use <ChevronRight />
+            </Link>
+          </section>
+        </div>
+      </div>
+    </AppShell>
+  );
+}
+function Onboarding() {
+  const nav = useNavigate();
+  const [account, setAccount] = useState<AccountState | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [message, setMessage] = useState("");
 
-  useEffect(()=>{
-    let active=true;
-    accountApi.get()
-      .then(current=>{
-        if(!active)return;
-        if(current.onboarding_completed){nav('/home',{replace:true});return}
+  useEffect(() => {
+    let active = true;
+    accountApi
+      .get()
+      .then((current) => {
+        if (!active) return;
+        if (current.onboarding_completed) {
+          nav("/home", { replace: true });
+          return;
+        }
         setAccount(current);
       })
-      .catch(()=>active&&setMessage('We couldn’t load your account. Please sign in again.'))
-      .finally(()=>active&&setLoading(false));
-    return()=>{active=false};
-  },[nav]);
+      .catch(
+        () =>
+          active &&
+          setMessage("We couldn’t load your account. Please sign in again."),
+      )
+      .finally(() => active && setLoading(false));
+    return () => {
+      active = false;
+    };
+  }, [nav]);
 
-  async function refreshAccount(){
-    const current=await accountApi.get();
+  async function refreshAccount() {
+    const current = await accountApi.get();
     setAccount(current);
-    const route=routeForAccount(current);
-    if(route==='/home')track('onboarding_completed');
-    nav(route,{replace:true});
+    const route = routeForAccount(current);
+    if (route === "/home") track("onboarding_completed");
+    nav(route, { replace: true });
   }
 
-  async function submitProfile(e:FormEvent<HTMLFormElement>){
+  async function submitProfile(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
-    setMessage('');
-    const form=new FormData(e.currentTarget);
-    const profile:ProfileInput={
-      preferred_name:String(form.get('preferred_name')).trim(),
-      gender:String(form.get('gender')).trim()||null,
-      pronouns:String(form.get('pronouns')).trim()||null,
-      date_of_birth:String(form.get('date_of_birth')),
+    setMessage("");
+    const form = new FormData(e.currentTarget);
+    const profile: ProfileInput = {
+      preferred_name: String(form.get("preferred_name")).trim(),
+      gender: String(form.get("gender")).trim() || null,
+      pronouns: String(form.get("pronouns")).trim() || null,
+      date_of_birth: String(form.get("date_of_birth")),
     };
-    try{
+    try {
       await accountApi.updateProfile(profile);
       await accountApi.completeProfile(profile);
       await refreshAccount();
-    }catch(error){
-      setMessage(apiFormMessage(error,'We couldn’t save your profile. Check each field and try again.'));
-    }finally{
+    } catch (error) {
+      setMessage(
+        apiFormMessage(
+          error,
+          "We couldn’t save your profile. Check each field and try again.",
+        ),
+      );
+    } finally {
       setLoading(false);
     }
   }
 
-  async function submitBirthProfile(e:FormEvent<HTMLFormElement>){
+  async function submitBirthProfile(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
-    setMessage('');
-    const form=new FormData(e.currentTarget);
-    const timeStatus=String(form.get('birth_time_status')) as BirthProfileInput['birth_time_precision'];
-    const hour=String(form.get('birth_hour'));
-    const minute=String(form.get('birth_minute'));
-    const time=timeStatus==='unknown'?'':`${hour}:${minute}`;
-    const birthProfile:BirthProfileInput={
-      display_name:String(form.get('display_name')).trim(),
-      relationship_type:String(form.get('relationship_type')) as BirthProfileInput['relationship_type'],
-      birth_date:String(form.get('birth_date')),
-      birth_time:timeStatus==='unknown'||!time?null:time,
-      birth_time_precision:timeStatus,
-      timezone:normalizeTimezone(String(form.get('timezone')).trim()),
-      country:String(form.get('country')).trim().toUpperCase(),
-      city:String(form.get('city')).trim(),
-      latitude:Number(form.get('latitude')),
-      longitude:Number(form.get('longitude')),
-      is_primary:true,
-      notes:null,
+    setMessage("");
+    const form = new FormData(e.currentTarget);
+    const timeStatus = String(
+      form.get("birth_time_status"),
+    ) as BirthProfileInput["birth_time_precision"];
+    const hour = String(form.get("birth_hour"));
+    const minute = String(form.get("birth_minute"));
+    const time = timeStatus === "unknown" ? "" : `${hour}:${minute}`;
+    const birthProfile: BirthProfileInput = {
+      display_name: String(form.get("display_name")).trim(),
+      relationship_type: String(
+        form.get("relationship_type"),
+      ) as BirthProfileInput["relationship_type"],
+      birth_date: String(form.get("birth_date")),
+      birth_time: timeStatus === "unknown" || !time ? null : time,
+      birth_time_precision: timeStatus,
+      timezone: normalizeTimezone(String(form.get("timezone")).trim()),
+      country: String(form.get("country")).trim().toUpperCase(),
+      city: String(form.get("city")).trim(),
+      latitude: Number(form.get("latitude")),
+      longitude: Number(form.get("longitude")),
+      is_primary: true,
+      notes: null,
     };
-    try{
+    try {
       await birthProfilesApi.create(birthProfile);
       await accountApi.get();
-      track('onboarding_completed');
-      nav('/profile?onboarding=dating-profile',{replace:true});
-    }catch(error){
-      setMessage(apiFormMessage(error,'We couldn’t create your birth profile. Check the place and time details, then retry.'));
-    }finally{
+      track("onboarding_completed");
+      nav("/profile?onboarding=dating-profile", { replace: true });
+    } catch (error) {
+      setMessage(
+        apiFormMessage(
+          error,
+          "We couldn’t create your birth profile. Check the place and time details, then retry.",
+        ),
+      );
+    } finally {
       setLoading(false);
     }
   }
 
-  if(loading&&!account)return <div className="onboarding"><header><Brand/><span>SYNCING</span></header><main><p role="status">Preparing your private account…</p></main></div>;
-  const birthStep=account?.next_step==='create_birth_profile'||account?.profile_status==='profile_complete';
-  const profile=account?.profile;
+  if (loading && !account)
+    return (
+      <div className="onboarding">
+        <header>
+          <Brand />
+          <span>SYNCING</span>
+        </header>
+        <main>
+          <p role="status">Preparing your private account…</p>
+        </main>
+      </div>
+    );
+  const birthStep =
+    account?.next_step === "create_birth_profile" ||
+    account?.profile_status === "profile_complete";
+  const profile = account?.profile;
 
-  return <div className="onboarding"><header><Brand/><span>{birthStep?'02 / 03':'01 / 03'}</span></header><main><p className="eyebrow">{birthStep?'YOUR BIRTH CHART':'LET’S BEGIN'}</p><h1>{birthStep?'The details the sky remembers.':'Make this space yours.'}</h1>{message&&<p role="alert" className="form-message">{message}</p>}{birthStep?<BirthProfileForm loading={loading} profile={profile} onSubmit={submitBirthProfile}/>:<form className="stack-form" onSubmit={submitProfile}><label>What should we call you?<input name="preferred_name" defaultValue={profile?.preferred_name??auth?.currentUser?.displayName??''} required/></label><label>Email<input type="email" value={auth?.currentUser?.email??''} readOnly aria-readonly="true"/><small>Managed securely by your sign-in provider.</small></label><label>Date of birth<input name="date_of_birth" type="date" defaultValue={profile?.date_of_birth??''} required/></label><div className="onboarding-pair"><label>Gender<select name="gender" defaultValue={profile?.gender??''}><option value="">Prefer not to say</option><option value="woman">Woman</option><option value="man">Man</option><option value="non_binary">Non-binary</option><option value="self_described">Self-described</option></select></label><label>Pronouns<input name="pronouns" defaultValue={profile?.pronouns??''} placeholder="e.g. she/her"/></label></div><button className="button" disabled={loading}>{loading?'Saving…':'Continue'} <ArrowRight/></button></form>}</main></div>
+  return (
+    <div className="onboarding">
+      <header>
+        <Brand />
+        <span>{birthStep ? "02 / 03" : "01 / 03"}</span>
+      </header>
+      <main>
+        <p className="eyebrow">
+          {birthStep ? "YOUR BIRTH CHART" : "LET’S BEGIN"}
+        </p>
+        <h1>
+          {birthStep
+            ? "The details the sky remembers."
+            : "Make this space yours."}
+        </h1>
+        {message && (
+          <p role="alert" className="form-message">
+            {message}
+          </p>
+        )}
+        {birthStep ? (
+          <BirthProfileForm
+            loading={loading}
+            profile={profile}
+            onSubmit={submitBirthProfile}
+          />
+        ) : (
+          <form className="stack-form" onSubmit={submitProfile}>
+            <label>
+              What should we call you?
+              <input
+                name="preferred_name"
+                defaultValue={
+                  profile?.preferred_name ??
+                  auth?.currentUser?.displayName ??
+                  ""
+                }
+                required
+              />
+            </label>
+            <label>
+              Email
+              <input
+                type="email"
+                value={auth?.currentUser?.email ?? ""}
+                readOnly
+                aria-readonly="true"
+              />
+              <small>Managed securely by your sign-in provider.</small>
+            </label>
+            <label>
+              Date of birth
+              <input
+                name="date_of_birth"
+                type="date"
+                defaultValue={profile?.date_of_birth ?? ""}
+                required
+              />
+            </label>
+            <div className="onboarding-pair">
+              <label>
+                Gender
+                <select name="gender" defaultValue={profile?.gender ?? ""}>
+                  <option value="">Prefer not to say</option>
+                  <option value="woman">Woman</option>
+                  <option value="man">Man</option>
+                  <option value="non_binary">Non-binary</option>
+                  <option value="self_described">Self-described</option>
+                </select>
+              </label>
+              <label>
+                Pronouns
+                <input
+                  name="pronouns"
+                  defaultValue={profile?.pronouns ?? ""}
+                  placeholder="e.g. she/her"
+                />
+              </label>
+            </div>
+            <button className="button" disabled={loading}>
+              {loading ? "Saving…" : "Continue"} <ArrowRight />
+            </button>
+          </form>
+        )}
+      </main>
+    </div>
+  );
 }
-export function App(){return <><PageTracker/><Routes><Route path="/" element={<Landing/>}/><Route path="/about" element={<Legal kind="about"/>}/><Route path="/privacy" element={<Legal kind="privacy"/>}/><Route path="/terms" element={<Legal kind="terms"/>}/><Route path="/login" element={<AuthPage/>}/><Route path="/signup" element={<AuthPage signup/>}/><Route path="/onboarding/*" element={<Onboarding/>}/><Route path="/home" element={<Dashboard/>}/><Route path="/today" element={<Navigate to="/home" replace/>}/><Route path="/blueprint" element={<Protected><BlueprintPage/></Protected>}/><Route path="/ask" element={<Ask/>}/><Route path="/relationships" element={<Protected><RelationshipsPage/></Protected>}/><Route path="/relationships/new" element={<Protected><NewRelationshipPage/></Protected>}/><Route path="/relationships/:relationshipId" element={<Protected><RelationshipPage/></Protected>}/><Route path="/relationships/:relationshipId/report" element={<Protected><RelationshipReportPage/></Protected>}/><Route path="/matches" element={<Navigate to="/relationships" replace/>}/><Route path="/matches/new" element={<Navigate to="/relationships/new" replace/>}/><Route path="/matches/:matchId" element={<LegacyRelationshipRedirect/>}/><Route path="/matches/:matchId/report" element={<LegacyRelationshipRedirect report/>}/><Route path="/people" element={<Protected><PeoplePage/></Protected>}/><Route path="/people/new" element={<Protected><PersonPage/></Protected>}/><Route path="/people/:personId" element={<Protected><PersonPage/></Protected>}/><Route path="/people/:personId/edit" element={<Protected><PersonPage/></Protected>}/><Route path="/saved" element={<Saved/>}/><Route path="/profile" element={<DatingProfilePage/>}/><Route path="/me" element={<Navigate to="/profile" replace/>}/><Route path="/profile/chart" element={<ChartPage/>}/><Route path="/profile/chart/:birthProfileId" element={<ChartPage/>}/><Route path="/profile/:birthProfileId" element={<ChartPage/>}/><Route path="/settings" element={<Settings/>}/><Route path="*" element={<Navigate to="/" replace/>}/></Routes></>}
+export function App() {
+  return (
+    <>
+      <PageTracker />
+      <Routes>
+        <Route path="/" element={<Landing />} />
+        <Route path="/about" element={<Legal kind="about" />} />
+        <Route path="/privacy" element={<Legal kind="privacy" />} />
+        <Route path="/terms" element={<Legal kind="terms" />} />
+        <Route path="/login" element={<AuthPage />} />
+        <Route path="/signup" element={<AuthPage signup />} />
+        <Route path="/onboarding/*" element={<Onboarding />} />
+        <Route
+          path="/home"
+          element={
+            <Protected>
+              <Dashboard />
+            </Protected>
+          }
+        />
+        <Route path="/today" element={<Navigate to="/home" replace />} />
+        <Route
+          path="/blueprint"
+          element={
+            <Protected>
+              <BlueprintPage />
+            </Protected>
+          }
+        />
+        <Route
+          path="/ask"
+          element={
+            <Protected>
+              <AskPage />
+            </Protected>
+          }
+        />
+        <Route
+          path="/relationships"
+          element={
+            <Protected>
+              <RelationshipsPage />
+            </Protected>
+          }
+        />
+        <Route
+          path="/relationships/new"
+          element={
+            <Protected>
+              <NewRelationshipPage />
+            </Protected>
+          }
+        />
+        <Route
+          path="/relationships/:relationshipId"
+          element={
+            <Protected>
+              <RelationshipPage />
+            </Protected>
+          }
+        />
+        <Route
+          path="/relationships/:relationshipId/report"
+          element={
+            <Protected>
+              <RelationshipReportPage />
+            </Protected>
+          }
+        />
+        <Route
+          path="/matches"
+          element={<Navigate to="/relationships" replace />}
+        />
+        <Route
+          path="/matches/new"
+          element={<Navigate to="/relationships/new" replace />}
+        />
+        <Route
+          path="/matches/:matchId"
+          element={<LegacyRelationshipRedirect />}
+        />
+        <Route
+          path="/matches/:matchId/report"
+          element={<LegacyRelationshipRedirect report />}
+        />
+        <Route
+          path="/people"
+          element={
+            <Protected>
+              <PeoplePage />
+            </Protected>
+          }
+        />
+        <Route
+          path="/people/new"
+          element={
+            <Protected>
+              <PersonPage />
+            </Protected>
+          }
+        />
+        <Route
+          path="/people/:personId"
+          element={
+            <Protected>
+              <PersonPage />
+            </Protected>
+          }
+        />
+        <Route
+          path="/people/:personId/edit"
+          element={
+            <Protected>
+              <PersonPage />
+            </Protected>
+          }
+        />
+        <Route
+          path="/saved"
+          element={
+            <Protected>
+              <SavedPage />
+            </Protected>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <Protected>
+              <DatingProfilePage />
+            </Protected>
+          }
+        />
+        <Route path="/me" element={<Navigate to="/profile" replace />} />
+        <Route
+          path="/profile/chart"
+          element={
+            <Protected>
+              <ChartPage />
+            </Protected>
+          }
+        />
+        <Route
+          path="/profile/chart/:birthProfileId"
+          element={
+            <Protected>
+              <ChartPage />
+            </Protected>
+          }
+        />
+        <Route
+          path="/profile/:birthProfileId"
+          element={
+            <Protected>
+              <ChartPage />
+            </Protected>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <Protected>
+              <SettingsPage />
+            </Protected>
+          }
+        />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </>
+  );
+}
 
-function LegacyRelationshipRedirect({report=false}:{report?:boolean}){const {matchId}=useParams();return <Navigate to={`/relationships/${matchId}${report?'/report':''}`} replace/>}
-function Protected({children}:{children:ReactNode}){
-  const location=useLocation();
-  const [checked,setChecked]=useState(!auth);
-  const [signedIn,setSignedIn]=useState(Boolean(auth?.currentUser));
-  useEffect(()=>{
-    let unsubscribe=()=>{};
-    const authInstance=auth;
-    if(authInstance)void import('firebase/auth').then(({onAuthStateChanged})=>{unsubscribe=onAuthStateChanged(authInstance,user=>{setSignedIn(Boolean(user));setChecked(true)})});
-    let robots=document.querySelector<HTMLMetaElement>('meta[name="robots"]');
-    const existed=Boolean(robots);
-    const previous=robots?.content;
-    if(!robots){robots=document.createElement('meta');robots.name='robots';document.head.appendChild(robots)}
-    robots.content='noindex,nofollow';
-    return()=>{unsubscribe();if(!existed)robots?.remove();else if(robots&&previous!==undefined)robots.content=previous};
-  },[]);
-  if(!checked)return <div className="generation" role="status"><span/><p>Opening your private space…</p></div>;
-  if(!signedIn)return <Navigate to="/login" state={{from:location.pathname}} replace/>;
+function LegacyRelationshipRedirect({ report = false }: { report?: boolean }) {
+  const { matchId } = useParams();
+  return (
+    <Navigate
+      to={`/relationships/${matchId}${report ? "/report" : ""}`}
+      replace
+    />
+  );
+}
+function Protected({ children }: { children: ReactNode }) {
+  const location = useLocation();
+  const [checked, setChecked] = useState(!auth);
+  const [signedIn, setSignedIn] = useState(Boolean(auth?.currentUser));
+  useEffect(() => {
+    let unsubscribe = () => {};
+    const authInstance = auth;
+    if (authInstance)
+      void import("firebase/auth").then(({ onAuthStateChanged }) => {
+        unsubscribe = onAuthStateChanged(authInstance, (user) => {
+          setSignedIn(Boolean(user));
+          setChecked(true);
+        });
+      });
+    let robots = document.querySelector<HTMLMetaElement>('meta[name="robots"]');
+    const existed = Boolean(robots);
+    const previous = robots?.content;
+    if (!robots) {
+      robots = document.createElement("meta");
+      robots.name = "robots";
+      document.head.appendChild(robots);
+    }
+    robots.content = "noindex,nofollow";
+    return () => {
+      unsubscribe();
+      if (!existed) robots?.remove();
+      else if (robots && previous !== undefined) robots.content = previous;
+    };
+  }, []);
+  if (!checked)
+    return (
+      <div className="generation" role="status">
+        <span />
+        <p>Opening your private space…</p>
+      </div>
+    );
+  if (!signedIn)
+    return <Navigate to="/login" state={{ from: location.pathname }} replace />;
   return children;
 }

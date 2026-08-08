@@ -1,10 +1,13 @@
-import { api } from './api';
+import { api } from "./api";
 
-export type NextOnboardingStep = 'complete_profile' | 'create_birth_profile' | null;
+export type NextOnboardingStep =
+  | "complete_profile"
+  | "create_birth_profile"
+  | null;
 
 export interface AccountState {
   id: string;
-  profile_status: 'incomplete' | 'profile_complete' | 'complete';
+  profile_status: "incomplete" | "profile_complete" | "complete";
   onboarding_completed: boolean;
   next_step: NextOnboardingStep;
   profile?: {
@@ -38,48 +41,82 @@ export interface ProfileInput {
   bio?: string | null;
 }
 
-const timezoneAliases:Record<string,string>={
-  'Asia/Calcutta':'Asia/Kolkata',
-  'US/Eastern':'America/New_York',
-  'US/Central':'America/Chicago',
-  'US/Mountain':'America/Denver',
-  'US/Pacific':'America/Los_Angeles',
+const timezoneAliases: Record<string, string> = {
+  "Asia/Calcutta": "Asia/Kolkata",
+  "US/Eastern": "America/New_York",
+  "US/Central": "America/Chicago",
+  "US/Mountain": "America/Denver",
+  "US/Pacific": "America/Los_Angeles",
 };
 
-const timezoneCountries:Record<string,string>={
-  'Asia/Kolkata':'IN','Asia/Colombo':'LK','Asia/Kathmandu':'NP','Asia/Dhaka':'BD','Asia/Karachi':'PK',
-  'Asia/Dubai':'AE','Asia/Singapore':'SG','Asia/Tokyo':'JP','Asia/Seoul':'KR','Asia/Shanghai':'CN','Asia/Hong_Kong':'HK',
-  'Australia/Sydney':'AU','Pacific/Auckland':'NZ','Europe/London':'GB','Europe/Dublin':'IE','Europe/Paris':'FR','Europe/Berlin':'DE',
-  'America/New_York':'US','America/Chicago':'US','America/Denver':'US','America/Los_Angeles':'US',
-  'America/Toronto':'CA','America/Vancouver':'CA',
+const timezoneCountries: Record<string, string> = {
+  "Asia/Kolkata": "IN",
+  "Asia/Colombo": "LK",
+  "Asia/Kathmandu": "NP",
+  "Asia/Dhaka": "BD",
+  "Asia/Karachi": "PK",
+  "Asia/Dubai": "AE",
+  "Asia/Singapore": "SG",
+  "Asia/Tokyo": "JP",
+  "Asia/Seoul": "KR",
+  "Asia/Shanghai": "CN",
+  "Asia/Hong_Kong": "HK",
+  "Australia/Sydney": "AU",
+  "Pacific/Auckland": "NZ",
+  "Europe/London": "GB",
+  "Europe/Dublin": "IE",
+  "Europe/Paris": "FR",
+  "Europe/Berlin": "DE",
+  "America/New_York": "US",
+  "America/Chicago": "US",
+  "America/Denver": "US",
+  "America/Los_Angeles": "US",
+  "America/Toronto": "CA",
+  "America/Vancouver": "CA",
 };
 
-export function normalizeTimezone(value:string){
-  return timezoneAliases[value]??value;
+export function normalizeTimezone(value: string) {
+  return timezoneAliases[value] ?? value;
 }
 
-export function inferCountryCode(timezone:string,locale:string){
-  const timezoneCountry=timezoneCountries[normalizeTimezone(timezone)];
-  if(timezoneCountry)return timezoneCountry;
-  try{return new Intl.Locale(locale).maximize().region??'US'}catch{return 'US'}
+export function inferCountryCode(timezone: string, locale: string) {
+  const timezoneCountry = timezoneCountries[normalizeTimezone(timezone)];
+  if (timezoneCountry) return timezoneCountry;
+  try {
+    return new Intl.Locale(locale).maximize().region ?? "US";
+  } catch {
+    return "US";
+  }
 }
 
 export const accountApi = {
-  get: () => api<AccountState>('/api/v1/me'),
-  updateProfile: (profile: ProfileInput) => api<AccountState>('/api/v1/me/profile', {
-    method: 'PATCH',
-    body: JSON.stringify(profile),
-  }),
-  completeProfile: (profile: ProfileInput) => api<AccountState>('/api/v1/me/profile/complete', {
-    method: 'POST',
-    body: JSON.stringify(profile),
-  }),
+  get: () => api<AccountState>("/api/v1/me"),
+  updateProfile: (profile: ProfileInput) =>
+    api<AccountState>("/api/v1/me/profile", {
+      method: "PATCH",
+      body: JSON.stringify(profile),
+    }),
+  completeProfile: (profile: ProfileInput) =>
+    api<AccountState>("/api/v1/me/profile/complete", {
+      method: "POST",
+      body: JSON.stringify(profile),
+    }),
+  exportData: () => api<Record<string, unknown>>("/api/v1/me/export"),
+  deleteAccount: () =>
+    api<{ status: string; retention_days: number; scheduled_purge_at: string }>(
+      "/api/v1/me",
+      { method: "DELETE" },
+    ),
 };
 
 export function routeForAccount(account: AccountState) {
-  if (account.onboarding_completed && account.profile_status === 'complete') return '/home';
-  if (account.next_step === 'create_birth_profile' || account.profile_status === 'profile_complete') {
-    return '/onboarding/birth-profile';
+  if (account.onboarding_completed && account.profile_status === "complete")
+    return "/home";
+  if (
+    account.next_step === "create_birth_profile" ||
+    account.profile_status === "profile_complete"
+  ) {
+    return "/onboarding/birth-profile";
   }
-  return '/onboarding/profile';
+  return "/onboarding/profile";
 }

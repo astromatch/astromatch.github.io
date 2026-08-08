@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ApiError, requestHeaders } from './api';
+import { ApiError, registerAccountDeletedHandler, requestHeaders } from './api';
 
 describe('API errors',()=>{
   it('retains safe structured details',()=>{
@@ -19,5 +19,12 @@ describe('API request headers',()=>{
   it('sets JSON content type when a request has a body',()=>{
     const headers=requestHeaders({method:'PATCH',body:JSON.stringify({name:'Deepak'})},'token','request-1');
     expect(headers.get('Content-Type')).toBe('application/json');
+  });
+});
+
+describe('account deletion handling',()=>{
+  it('allows a global cleanup handler to be registered',()=>{
+    expect(()=>registerAccountDeletedHandler(()=>undefined)).not.toThrow();
+    registerAccountDeletedHandler(undefined);
   });
 });

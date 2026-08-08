@@ -1,4 +1,4 @@
-import { api } from "./api";
+import { api, idempotencyHeaders } from "./api";
 import type { Conversation } from "./conversations";
 
 export type SavedItemType =
@@ -41,6 +41,7 @@ export const libraryApi = {
   }) =>
     api<SavedItem>("/api/v1/saved-items", {
       method: "POST",
+      headers: idempotencyHeaders(),
       body: JSON.stringify(input),
     }),
   remove: (id: string) =>
@@ -48,6 +49,7 @@ export const libraryApi = {
   createShare: (relationshipId: string) =>
     api<ShareCard>(`/api/v1/relationships/${relationshipId}/share-cards`, {
       method: "POST",
+      headers: idempotencyHeaders(),
       body: JSON.stringify({ expires_at: null }),
     }),
   revokeShare: (id: string) =>

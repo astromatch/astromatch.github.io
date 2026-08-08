@@ -148,7 +148,7 @@ describe("relationship API boundary", () => {
     await blueprintApi.generate();
     expect(apiMock).toHaveBeenLastCalledWith(
       "/api/v1/me/relationship-blueprint/generate",
-      { method: "POST" },
+      expect.objectContaining({ method: "POST", headers: expect.objectContaining({ "Idempotency-Key": expect.any(String) }) }),
     );
   });
 
@@ -157,15 +157,16 @@ describe("relationship API boundary", () => {
     await relationshipsApi.calculate("m1", "romantic");
     expect(apiMock).toHaveBeenCalledWith(
       "/api/v1/relationships/m1/compatibility/calculate",
-      {
+      expect.objectContaining({
         method: "POST",
         body: JSON.stringify({ focus: "romantic" }),
-      },
+        headers: expect.objectContaining({ "Idempotency-Key": expect.any(String) }),
+      }),
     );
     await relationshipsApi.generateReport("m1");
     expect(apiMock).toHaveBeenLastCalledWith(
       "/api/v1/relationships/m1/report/generate",
-      { method: "POST" },
+      expect.objectContaining({ method: "POST", headers: expect.objectContaining({ "Idempotency-Key": expect.any(String) }) }),
     );
   });
 

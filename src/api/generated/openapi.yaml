@@ -1,0 +1,433 @@
+openapi: 3.1.0
+info:
+  title: AstroMatch API
+  version: 1.0.0
+  description: Private relationship astrology API. Interpretations are reflective and not scientifically predictive.
+servers: [{url: "/",description: Current API host}]
+security: [{firebaseBearer: []}]
+tags: [{name: System,description: Health and metadata},{name: Me,description: Account and onboarding profile},{name: Dating Profile,description: Private editing surfaces and photo management},{name: Birth Charts,description: Owned birth profiles and deterministic natal charts},{name: People,description: Private people},{name: Relationships,description: Private relationship intelligence},{name: Matches,description: Legacy compatibility reports},{name: Conversations,description: Contextual questions},{name: Sharing,description: Private share metadata},{name: Usage,description: AI usage summary}]
+paths:
+  /health:
+    get:
+      tags: [System]
+      summary: Process liveness (does not access dependencies)
+      security: []
+      responses: {'200': {$ref: '#/components/responses/Success'}}
+  /ready:
+    get:
+      tags: [System]
+      summary: PostgreSQL readiness
+      security: []
+      responses: {'200': {$ref: '#/components/responses/Success'},'503': {$ref: '#/components/responses/Error'}}
+  /api/v1/meta/config: {get: {tags: [System],security: [],responses: {'200': {$ref: '#/components/responses/Success'}}}}
+  /api/v1/meta/license: {get: {tags: [System],summary: 'AGPL license, Swiss Ephemeris notice, and corresponding source URL',security: [],responses: {'200': {$ref: '#/components/responses/Success'}}}}
+  /api/v1/me:
+    get:
+      tags: [Me]
+      summary: Get the internally provisioned account and profile
+      description: The first request with a valid Firebase ID token atomically provisions the PostgreSQL user and empty profile.
+      responses: {'200': {$ref: '#/components/responses/CurrentUser'},'401': {$ref: '#/components/responses/Error'}}
+    patch: {tags: [Me],requestBody: {$ref: '#/components/requestBodies/UserPatch'},responses: {'200': {$ref: '#/components/responses/Success'},'422': {$ref: '#/components/responses/Error'}}}
+    delete:
+      tags: [Me]
+      summary: Disable the account and schedule permanent deletion
+      description: Immediately prevents future API processing, requests deletion from Firebase and media storage, and schedules database purging after the configured retention window.
+      responses: {'202': {description: Deletion accepted,content: {application/json: {schema: {type: object}}}},'404': {$ref: '#/components/responses/Error'}}
+  /api/v1/me/export:
+    get:
+      tags: [Me]
+      summary: Export all account-owned product data as JSON
+      responses: {'200': {description: Versioned account export,content: {application/json: {schema: {type: object}}}}}
+  /api/v1/me/profile:
+    patch:
+      tags: [Me]
+      summary: Patch editable account-profile fields
+      requestBody: {$ref: '#/components/requestBodies/ProfilePatch'}
+      responses: {'200': {$ref: '#/components/responses/Profile'},'400': {$ref: '#/components/responses/Error'},'401': {$ref: '#/components/responses/Error'},'422': {$ref: '#/components/responses/Error'}}
+  /api/v1/me/profile/complete:
+    post:
+      tags: [Me]
+      summary: Validate and complete the account-profile onboarding step
+      description: Applies the supplied patch, then validates the persisted profile. The resulting profile requires date_of_birth and either preferred_name or first_name; country_code, timezone, locale, gender, and pronouns are optional. Sets profile_status to profile_complete, or complete when an active primary birth profile already exists. Repeated calls are idempotent.
+      requestBody: {$ref: '#/components/requestBodies/ProfilePatch'}
+      responses: {'200': {$ref: '#/components/responses/Success'},'400': {$ref: '#/components/responses/Error'},'401': {$ref: '#/components/responses/Error'},'422': {$ref: '#/components/responses/Error'}}
+  /api/v1/me/dating-profile:
+    get: {tags: [Dating Profile],summary: Get the current user's private editable dating profile,responses: {'200': {$ref: '#/components/responses/DatingProfile'},'401': {$ref: '#/components/responses/Error'}}}
+    patch:
+      tags: [Dating Profile]
+      summary: Patch preferences and atomically replace prompts or questions
+      requestBody: {required: true,content: {application/json: {schema: {$ref: '#/components/schemas/DatingProfilePatch'}}}}
+      responses: {'200': {$ref: '#/components/responses/DatingProfile'},'409': {$ref: '#/components/responses/Error'},'422': {$ref: '#/components/responses/Error'}}
+  /api/v1/me/dating-profile/photos/upload-url:
+    post: {tags: [Dating Profile],summary: Create a short-lived signed Cloudinary image upload,responses: {'200': {$ref: '#/components/responses/Success'},'503': {$ref: '#/components/responses/Error'}}}
+  /api/v1/me/dating-profile/photos:
+    post:
+      tags: [Dating Profile]
+      summary: Verify and register an uploaded Cloudinary photo
+      requestBody: {required: true,content: {application/json: {schema: {type: object,required: [public_id],additionalProperties: false,properties: {public_id: {type: string},alt: {type: [string,'null'],maxLength: 200}}}}}}
+      responses: {'201': {$ref: '#/components/responses/Success'},'409': {$ref: '#/components/responses/Error'},'422': {$ref: '#/components/responses/Error'}}
+  /api/v1/me/dating-profile/photos/{id}:
+    parameters: [{$ref: '#/components/parameters/ID'}]
+    patch:
+      tags: [Dating Profile]
+      requestBody: {required: true,content: {application/json: {schema: {type: object,additionalProperties: false,properties: {alt: {type: [string,'null'],maxLength: 200},is_primary: {type: boolean}}}}}}
+      responses: {'200': {$ref: '#/components/responses/Success'},'404': {$ref: '#/components/responses/Error'},'422': {$ref: '#/components/responses/Error'}}
+    delete: {tags: [Dating Profile],summary: Archive a photo and promote the next photo when required,responses: {'204': {description: Archived},'404': {$ref: '#/components/responses/Error'}}}
+  /api/v1/me/dating-profile/photos/order:
+    put:
+      tags: [Dating Profile]
+      requestBody: {required: true,content: {application/json: {schema: {type: object,required: [photo_ids],additionalProperties: false,properties: {photo_ids: {type: array,maxItems: 6,uniqueItems: true,items: {type: string,format: uuid}}}}}}}
+      responses: {'200': {$ref: '#/components/responses/Success'},'422': {$ref: '#/components/responses/Error'}}
+  /api/v1/birth-profiles:
+    get:
+      tags: [Birth Charts]
+      summary: List the authenticated user's active birth profiles
+      responses: {'200': {$ref: '#/components/responses/Success'},'401': {$ref: '#/components/responses/Error'}}
+    post:
+      tags: [Birth Charts]
+      summary: Transactionally create a profile and Swiss Ephemeris natal chart
+      requestBody: {$ref: '#/components/requestBodies/BirthProfileCreate'}
+      responses: {'201': {$ref: '#/components/responses/BirthProfile'},'400': {$ref: '#/components/responses/Error'},'401': {$ref: '#/components/responses/Error'},'422': {$ref: '#/components/responses/Error'}}
+  /api/v1/birth-profiles/{id}:
+    parameters: [{$ref: '#/components/parameters/ID'}]
+    get: {tags: [Birth Charts],summary: Get an owned birth profile,responses: {'200': {$ref: '#/components/responses/BirthProfile'},'404': {$ref: '#/components/responses/Error'}}}
+    patch:
+      tags: [Birth Charts]
+      summary: Update an owned profile and generate a new chart when calculation input changes
+      requestBody: {required: true,content: {application/json: {schema: {$ref: '#/components/schemas/BirthProfilePatch'}}}}
+      responses: {'200': {$ref: '#/components/responses/BirthProfile'},'404': {$ref: '#/components/responses/Error'},'422': {$ref: '#/components/responses/Error'}}
+    delete: {tags: [Birth Charts],summary: Archive an owned birth profile,responses: {'204': {description: Archived},'404': {$ref: '#/components/responses/Error'}}}
+  /api/v1/birth-profiles/{id}/chart:
+    parameters: [{$ref: '#/components/parameters/ID'}]
+    get: {tags: [Birth Charts],summary: Get profile and active Swiss Ephemeris chart,responses: {'200': {$ref: '#/components/responses/Chart'},'404': {$ref: '#/components/responses/Error'}}}
+  /api/v1/birth-profiles/{id}/planets:
+    parameters: [{$ref: '#/components/parameters/ID'}]
+    get: {tags: [Birth Charts],summary: Get active chart planet positions,responses: {'200': {$ref: '#/components/responses/Success'}}}
+  /api/v1/birth-profiles/{id}/houses:
+    parameters: [{$ref: '#/components/parameters/ID'}]
+    get: {tags: [Birth Charts],summary: Get active chart house cusps,responses: {'200': {$ref: '#/components/responses/Success'}}}
+  /api/v1/birth-profiles/{id}/aspects:
+    parameters: [{$ref: '#/components/parameters/ID'}]
+    get: {tags: [Birth Charts],summary: Get active chart aspects,responses: {'200': {$ref: '#/components/responses/Success'}}}
+  /api/v1/birth-profiles/{id}/recalculate:
+    parameters: [{$ref: '#/components/parameters/ID'}]
+    post:
+      tags: [Birth Charts]
+      summary: Idempotently recalculate when input or calculation version changed
+      responses: {'200': {$ref: '#/components/responses/Chart'},'404': {$ref: '#/components/responses/Error'}}
+  /api/v1/me/birth-profile:
+    get: {tags: [Me],responses: {'200': {$ref: '#/components/responses/Success'},'404': {$ref: '#/components/responses/Error'}}}
+    post: {tags: [Me],requestBody: {$ref: '#/components/requestBodies/BirthProfile'},responses: {'201': {$ref: '#/components/responses/Success'},'422': {$ref: '#/components/responses/Error'}}}
+    put: {tags: [Me],requestBody: {$ref: '#/components/requestBodies/BirthProfile'},responses: {'200': {$ref: '#/components/responses/Success'},'422': {$ref: '#/components/responses/Error'}}}
+  /api/v1/people:
+    get: {tags: [People],responses: {'200': {$ref: '#/components/responses/Success'}}}
+    post: {tags: [People],requestBody: {required: true,content: {application/json: {schema: {$ref: '#/components/schemas/PersonInput'}}}},responses: {'201': {$ref: '#/components/responses/Success'},'422': {$ref: '#/components/responses/Error'}}}
+  /api/v1/people/{id}:
+    parameters: [{$ref: '#/components/parameters/ID'}]
+    get: {tags: [People],responses: {'200': {$ref: '#/components/responses/Success'},'404': {$ref: '#/components/responses/Error'}}}
+    put: {tags: [People],requestBody: {required: true,content: {application/json: {schema: {$ref: '#/components/schemas/PersonInput'}}}},responses: {'200': {$ref: '#/components/responses/Success'}}}
+    patch: {tags: [People],summary: Replace editable private-person fields and recalculate the chart,requestBody: {required: true,content: {application/json: {schema: {$ref: '#/components/schemas/PersonInput'}}}},responses: {'200': {$ref: '#/components/responses/Success'},'404': {$ref: '#/components/responses/Error'},'422': {$ref: '#/components/responses/Error'}}}
+    delete: {tags: [People],summary: Archive the person and active relationships,responses: {'204': {description: Archived}}}
+  /api/v1/people/{id}/archive:
+    parameters: [{$ref: '#/components/parameters/ID'}]
+    post: {tags: [People],responses: {'204': {description: Archived}}}
+  /api/v1/me/relationship-blueprint:
+    get: {tags: [Relationships],summary: Get the latest persisted relationship blueprint,responses: {'200': {$ref: '#/components/responses/Success'},'404': {$ref: '#/components/responses/Error'}}}
+  /api/v1/me/relationship-blueprint/generate:
+    post: {tags: [Relationships],summary: Generate or reuse an idempotent chart-grounded blueprint,parameters: [{$ref: '#/components/parameters/OptionalIdempotencyKey'}],responses: {'200': {$ref: '#/components/responses/Success'},'404': {$ref: '#/components/responses/Error'},'429': {$ref: '#/components/responses/Error'},'503': {$ref: '#/components/responses/Error'}}}
+  /api/v1/me/relationship-blueprint/regenerate:
+    post: {tags: [Relationships],summary: Explicitly regenerate the blueprint,parameters: [{$ref: '#/components/parameters/OptionalIdempotencyKey'}],responses: {'200': {$ref: '#/components/responses/Success'},'429': {$ref: '#/components/responses/Error'},'503': {$ref: '#/components/responses/Error'}}}
+  /api/v1/relationships:
+    get: {tags: [Relationships],summary: List lightweight relationship cards,responses: {'200': {$ref: '#/components/responses/Success'}}}
+    post:
+      tags: [Relationships]
+      summary: Create a private analytical relationship
+      parameters: [{$ref: '#/components/parameters/OptionalIdempotencyKey'}]
+      requestBody: {required: true,content: {application/json: {schema: {$ref: '#/components/schemas/RelationshipInput'}}}}
+      responses: {'201': {$ref: '#/components/responses/Relationship'},'404': {$ref: '#/components/responses/Error'},'409': {$ref: '#/components/responses/Error'},'422': {$ref: '#/components/responses/Error'}}
+  /api/v1/relationships/{id}:
+    parameters: [{$ref: '#/components/parameters/ID'}]
+    get: {tags: [Relationships],summary: Get relationship state and generation statuses,responses: {'200': {$ref: '#/components/responses/Relationship'},'404': {$ref: '#/components/responses/Error'}}}
+    patch: {tags: [Relationships],requestBody: {required: true,content: {application/json: {schema: {$ref: '#/components/schemas/RelationshipPatch'}}}},responses: {'200': {$ref: '#/components/responses/Relationship'},'404': {$ref: '#/components/responses/Error'},'422': {$ref: '#/components/responses/Error'}}}
+    delete: {tags: [Relationships],summary: Archive relationship while retaining historical calculations,responses: {'204': {description: Archived}}}
+  /api/v1/relationships/{id}/compatibility/calculate:
+    parameters: [{$ref: '#/components/parameters/ID'},{$ref: '#/components/parameters/OptionalIdempotencyKey'}]
+    post:
+      tags: [Relationships]
+      summary: Calculate deterministic chart-to-chart compatibility without AI
+      requestBody: {required: true,content: {application/json: {schema: {type: object,required: [focus],additionalProperties: false,properties: {focus: {enum: [general,romantic,communication,long_term]}}}}}}
+      responses: {'200': {$ref: '#/components/responses/Success'},'404': {$ref: '#/components/responses/Error'},'422': {$ref: '#/components/responses/Error'}}
+  /api/v1/relationships/{id}/compatibility:
+    parameters: [{$ref: '#/components/parameters/ID'}]
+    get: {tags: [Relationships],summary: Get latest deterministic compatibility facts,responses: {'200': {$ref: '#/components/responses/Success'},'404': {$ref: '#/components/responses/Error'}}}
+  /api/v1/relationships/{id}/report/generate:
+    parameters: [{$ref: '#/components/parameters/ID'},{$ref: '#/components/parameters/OptionalIdempotencyKey'}]
+    post: {tags: [Relationships],summary: Generate or reuse a structured compatibility report,responses: {'200': {$ref: '#/components/responses/Success'},'404': {$ref: '#/components/responses/Error'},'429': {$ref: '#/components/responses/Error'},'503': {$ref: '#/components/responses/Error'}}}
+  /api/v1/relationships/{id}/report:
+    parameters: [{$ref: '#/components/parameters/ID'}]
+    get: {tags: [Relationships],summary: Get latest persisted report,responses: {'200': {$ref: '#/components/responses/Success'},'404': {$ref: '#/components/responses/Error'}}}
+  /api/v1/relationships/{id}/report/regenerate:
+    parameters: [{$ref: '#/components/parameters/ID'},{$ref: '#/components/parameters/OptionalIdempotencyKey'}]
+    post: {tags: [Relationships],summary: Explicitly regenerate the current report,responses: {'200': {$ref: '#/components/responses/Success'},'429': {$ref: '#/components/responses/Error'},'503': {$ref: '#/components/responses/Error'}}}
+  /api/v1/relationships/{id}/share-cards:
+    parameters: [{$ref: '#/components/parameters/ID'}]
+    post:
+      tags: [Sharing]
+      summary: Create a private, privacy-safe relationship summary card
+      description: Excludes names, birth data, locations, report prose, raw factors and identifiers. External public redemption is intentionally disabled for MVP.
+      requestBody: {required: false,content: {application/json: {schema: {type: object,additionalProperties: false,properties: {expires_at: {type: [string,'null'],format: date-time}}}}}}
+      responses: {'201': {$ref: '#/components/responses/Success'},'404': {$ref: '#/components/responses/Error'},'422': {$ref: '#/components/responses/Error'}}
+  /api/v1/matches:
+    get: {tags: [Matches],deprecated: true,description: Legacy compatibility surface. New clients must use /relationships.,responses: {'200': {$ref: '#/components/responses/Success'}}}
+    post: {tags: [Matches],deprecated: true,description: Legacy sun-sign compatibility. New clients must use /relationships.,requestBody: {required: true,content: {application/json: {schema: {$ref: '#/components/schemas/MatchInput'}}}},responses: {'201': {$ref: '#/components/responses/Success'}}}
+  /api/v1/matches/{id}:
+    parameters: [{$ref: '#/components/parameters/ID'}]
+    get: {tags: [Matches],responses: {'200': {$ref: '#/components/responses/Success'}}}
+    delete: {tags: [Matches],responses: {'204': {description: Deleted}}}
+  /api/v1/matches/{id}/generate:
+    parameters: [{$ref: '#/components/parameters/ID'},{$ref: '#/components/parameters/IdempotencyKey'}]
+    post: {tags: [Matches],responses: {'200': {$ref: '#/components/responses/Success'},'429': {$ref: '#/components/responses/Error'},'503': {$ref: '#/components/responses/Error'}}}
+  /api/v1/matches/{id}/report:
+    parameters: [{$ref: '#/components/parameters/ID'}]
+    get: {tags: [Matches],responses: {'200': {$ref: '#/components/responses/Success'}}}
+  /api/v1/conversations:
+    get: {tags: [Conversations],responses: {'200': {$ref: '#/components/responses/Success'}}}
+    post: {tags: [Conversations],requestBody: {required: true,content: {application/json: {schema: {$ref: '#/components/schemas/ConversationInput'}}}},responses: {'201': {$ref: '#/components/responses/Success'}}}
+  /api/v1/conversations/{id}:
+    parameters: [{$ref: '#/components/parameters/ID'}]
+    get: {tags: [Conversations],responses: {'200': {$ref: '#/components/responses/Success'}}}
+    delete: {tags: [Conversations],responses: {'204': {description: Archived}}}
+  /api/v1/conversations/{id}/messages:
+    parameters: [{$ref: '#/components/parameters/ID'}]
+    post: {tags: [Conversations],requestBody: {$ref: '#/components/requestBodies/Question'},responses: {'201': {$ref: '#/components/responses/Success'},'429': {$ref: '#/components/responses/Error'}}}
+  /api/v1/conversations/{id}/messages/stream:
+    parameters: [{$ref: '#/components/parameters/ID'}]
+    post: {tags: [Conversations],requestBody: {$ref: '#/components/requestBodies/Question'},responses: {'200': {description: Server-sent event,content: {text/event-stream: {schema: {type: string}}}}}}
+  /api/v1/messages/{id}/feedback:
+    parameters: [{$ref: '#/components/parameters/ID'}]
+    post: {tags: [Conversations],requestBody: {required: true,content: {application/json: {schema: {$ref: '#/components/schemas/FeedbackInput'}}}},responses: {'200': {$ref: '#/components/responses/Success'}}}
+  /api/v1/matches/{id}/share-cards:
+    parameters: [{$ref: '#/components/parameters/ID'}]
+    post: {tags: [Sharing],deprecated: true,description: Legacy match share-card route. New clients must use the relationship route.,requestBody: {required: false,content: {application/json: {schema: {type: object,properties: {expiresAt: {type: [string,'null'],format: date-time}}}}}},responses: {'201': {$ref: '#/components/responses/Success'}}}
+  /api/v1/library:
+    get:
+      tags: [Sharing, Conversations]
+      summary: Get the unified Saved library
+      description: Returns saved references, active private share cards and conversation history without duplicating sensitive generated content.
+      responses: {'200': {$ref: '#/components/responses/Success'}}
+  /api/v1/saved-items:
+    post:
+      tags: [Sharing]
+      summary: Save a report, Blueprint insight or compatibility guidance reference
+      requestBody: {required: true,content: {application/json: {schema: {$ref: '#/components/schemas/SavedItemInput'}}}}
+      responses: {'201': {$ref: '#/components/responses/Success'},'404': {$ref: '#/components/responses/Error'},'422': {$ref: '#/components/responses/Error'}}
+  /api/v1/saved-items/{id}:
+    parameters: [{$ref: '#/components/parameters/ID'}]
+    delete: {tags: [Sharing],summary: Remove an item from Saved,responses: {'204': {description: Archived},'404': {$ref: '#/components/responses/Error'}}}
+  /api/v1/share-cards:
+    get: {tags: [Sharing],responses: {'200': {$ref: '#/components/responses/Success'}}}
+  /api/v1/share-cards/{id}:
+    parameters: [{$ref: '#/components/parameters/ID'}]
+    delete: {tags: [Sharing],responses: {'204': {description: Revoked}}}
+  /api/v1/usage: {get: {tags: [Usage],responses: {'200': {$ref: '#/components/responses/Success'}}}}
+components:
+  securitySchemes: {firebaseBearer: {type: http,scheme: bearer,bearerFormat: Firebase-ID-token}}
+  parameters:
+    ID: {name: id,in: path,required: true,schema: {type: string,format: uuid}}
+    IdempotencyKey: {name: Idempotency-Key,in: header,required: true,schema: {type: string,maxLength: 200}}
+    OptionalIdempotencyKey: {name: Idempotency-Key,in: header,required: false,description: Optional retry correlation; source hashes provide operation idempotency.,schema: {type: string,maxLength: 200}}
+  requestBodies:
+    UserPatch: {required: true,content: {application/json: {schema: {type: object,additionalProperties: false,properties: {displayName: {type: string,maxLength: 100}}}}}}
+    ProfilePatch: {required: true,content: {application/json: {schema: {$ref: '#/components/schemas/ProfilePatch'}}}}
+    BirthProfileCreate: {required: true,content: {application/json: {schema: {$ref: '#/components/schemas/BirthProfileInput'}}}}
+    BirthProfile: {required: true,content: {application/json: {schema: {$ref: '#/components/schemas/LegacyBirthProfileInput'}}}}
+    Question: {required: true,content: {application/json: {schema: {type: object,required: [content],properties: {content: {type: string,minLength: 1,maxLength: 2000}}}}}}
+  schemas:
+    BirthProfileInput:
+      type: object
+      additionalProperties: false
+      required: [display_name,relationship_type,birth_date,birth_time_precision,timezone,country,city,latitude,longitude]
+      properties:
+        display_name: {type: string,minLength: 1,maxLength: 100,example: Deepak}
+        relationship_type: {type: string,enum: [self,partner,crush,friend,family,other]}
+        birth_date: {type: string,format: date,example: '1996-08-27'}
+        birth_time: {type: [string,'null'],pattern: '^\d{2}:\d{2}(:\d{2})?$',example: '09:30:00'}
+        birth_time_precision: {type: string,enum: [exact,approximate,unknown]}
+        timezone: {type: string,example: Asia/Kolkata}
+        country: {type: string,pattern: '^[A-Z]{2}$',example: IN}
+        city: {type: string,minLength: 1,maxLength: 150,example: Mumbai}
+        latitude: {type: number,minimum: -90,maximum: 90,example: 19.076}
+        longitude: {type: number,minimum: -180,maximum: 180,example: 72.8777}
+        is_primary: {type: boolean,default: false}
+        notes: {type: [string,'null'],maxLength: 2000}
+    BirthProfilePatch:
+      type: object
+      additionalProperties: false
+      description: Omitted properties remain unchanged.
+      properties:
+        display_name: {type: string,minLength: 1,maxLength: 100}
+        relationship_type: {type: string,enum: [self,partner,crush,friend,family,other]}
+        birth_date: {type: string,format: date}
+        birth_time: {type: [string,'null'],pattern: '^\d{2}:\d{2}(:\d{2})?$'}
+        birth_time_precision: {type: string,enum: [exact,approximate,unknown]}
+        timezone: {type: string}
+        country: {type: string,pattern: '^[A-Z]{2}$'}
+        city: {type: string,minLength: 1,maxLength: 150}
+        latitude: {type: number,minimum: -90,maximum: 90}
+        longitude: {type: number,minimum: -180,maximum: 180}
+        is_primary: {type: boolean}
+        notes: {type: [string,'null'],maxLength: 2000}
+    BirthProfile:
+      allOf:
+        - {$ref: '#/components/schemas/BirthProfileInput'}
+        - {type: object,required: [id,created_at,updated_at],properties: {id: {type: string,format: uuid},active_chart_id: {type: [string,'null'],format: uuid},created_at: {type: string,format: date-time},updated_at: {type: string,format: date-time}}}
+    PlanetPosition: {type: object,required: [planet,sign,degree,retrograde],properties: {planet: {type: string},sign: {type: string},degree: {type: number,minimum: 0,exclusiveMaximum: 30},house: {type: [integer,'null'],minimum: 1,maximum: 12},retrograde: {type: boolean}}}
+    HousePosition: {type: object,properties: {house: {type: integer,minimum: 1,maximum: 12},sign: {type: string},degree: {type: number}}}
+    ChartAspect: {type: object,properties: {planet_a: {type: string},planet_b: {type: string},aspect: {type: string},orb: {type: number,minimum: 0}}}
+    DatingPrompt: {type: object,properties: {id: {type: string,format: uuid},prompt: {type: string,maxLength: 150},answer: {type: string,maxLength: 500},position: {type: integer,minimum: 0,maximum: 2}}}
+    DatingQuestion: {type: object,properties: {id: {type: string,format: uuid},question: {type: string,maxLength: 200},answer: {type: string,maxLength: 500},position: {type: integer,minimum: 0,maximum: 2}}}
+    DatingPhoto: {type: object,properties: {id: {type: string,format: uuid},url: {type: string,format: uri},alt: {type: [string,'null'],maxLength: 200},position: {type: integer,minimum: 0,maximum: 5},is_primary: {type: boolean}}}
+    DatingProfile:
+      type: object
+      properties:
+        username: {type: [string,'null'],pattern: '^[a-z0-9_]{3,30}$'}
+        bio: {type: [string,'null'],maxLength: 500}
+        max_distance_km: {type: integer,minimum: 1,maximum: 500}
+        interested_in: {type: array,maxItems: 4,items: {type: string,enum: [men,women,non_binary,everyone]}}
+        preferences:
+          type: object
+          additionalProperties: false
+          properties:
+            interested_in: {type: array,maxItems: 4,items: {type: string,description: Case-insensitive,enum: [men,women,non_binary,everyone]}}
+        hobbies: {type: array,maxItems: 20,items: {type: string,maxLength: 50}}
+        interests: {type: array,maxItems: 20,items: {type: string,maxLength: 50}}
+        visibility: {type: string,enum: [public,matches,private]}
+        discovery_paused: {type: boolean}
+        dating_prompts: {type: array,maxItems: 3,items: {$ref: '#/components/schemas/DatingPrompt'}}
+        questions: {type: array,maxItems: 3,items: {$ref: '#/components/schemas/DatingQuestion'}}
+        photos: {type: array,maxItems: 6,items: {$ref: '#/components/schemas/DatingPhoto'}}
+    DatingProfilePatch:
+      type: object
+      additionalProperties: false
+      properties:
+        username: {type: string,pattern: '^[a-z0-9_]{3,30}$'}
+        bio: {type: string,maxLength: 500}
+        max_distance_km: {type: integer,minimum: 1,maximum: 500}
+        interested_in: {type: array,maxItems: 4,items: {type: string,enum: [men,women,non_binary,everyone]}}
+        hobbies: {type: array,maxItems: 20,items: {type: string,maxLength: 50}}
+        interests: {type: array,maxItems: 20,items: {type: string,maxLength: 50}}
+        visibility: {type: string,enum: [public,matches,private]}
+        discovery_paused: {type: boolean}
+        dating_prompts: {type: array,maxItems: 3,items: {type: object,required: [prompt,answer,position],properties: {prompt: {type: string,maxLength: 150},answer: {type: string,maxLength: 500},position: {type: integer}}}}
+        prompts: {type: array,maxItems: 3,items: {type: object,required: [prompt,answer,position],properties: {prompt: {type: string,maxLength: 150},answer: {type: string,maxLength: 500},position: {type: integer}}}}
+        questions: {type: array,maxItems: 3,items: {type: object,required: [question,answer,position],properties: {question: {type: string,maxLength: 200},answer: {type: string,maxLength: 500},position: {type: integer}}}}
+    ChartCalculation:
+      type: object
+      properties:
+        id: {type: string,format: uuid}
+        birth_profile_id: {type: string,format: uuid}
+        calculation_version: {type: string,example: swiss-ephemeris-tropical-v1}
+        ephemeris_version: {type: string,example: 2.10.03}
+        house_system: {type: string,enum: [placidus,whole_sign,unavailable]}
+        data_quality: {$ref: '#/components/schemas/DataQuality'}
+        sun_sign: {type: string,example: Virgo}
+        ascendant: {type: [string,'null']}
+        mc: {type: [string,'null']}
+        calculated_at: {type: string,format: date-time}
+        planets: {type: array,items: {$ref: '#/components/schemas/PlanetPosition'}}
+        houses: {type: array,items: {$ref: '#/components/schemas/HousePosition'}}
+        aspects: {type: array,items: {$ref: '#/components/schemas/ChartAspect'}}
+    ProfileStatus: {type: string,enum: [incomplete,profile_complete,complete]}
+    ProfilePatch:
+      type: object
+      additionalProperties: false
+      properties:
+        first_name: {type: [string,'null'],maxLength: 100}
+        last_name: {type: [string,'null'],maxLength: 100}
+        preferred_name: {type: [string,'null'],maxLength: 100}
+        gender: {type: [string,'null'],enum: [woman,man,non_binary,self_described,null]}
+        pronouns: {type: [string,'null'],maxLength: 50}
+        date_of_birth: {type: [string,'null'],format: date}
+        relationship_status: {type: [string,'null'],maxLength: 50}
+        looking_for: {type: [string,'null'],maxLength: 50}
+        country_code: {type: [string,'null'],pattern: '^[A-Z]{2}$',example: IN}
+        timezone: {type: [string,'null'],example: Asia/Kolkata}
+        locale: {type: [string,'null'],maxLength: 35,example: en-IN}
+        bio: {type: [string,'null'],maxLength: 2000}
+    UserProfile:
+      allOf:
+        - {$ref: '#/components/schemas/ProfilePatch'}
+        - {type: object,properties: {profile_completed_at: {type: [string,'null'],format: date-time}}}
+    CurrentUser:
+      type: object
+      properties:
+        id: {type: string,format: uuid}
+        firebase_uid: {type: string}
+        email: {type: [string,'null'],format: email}
+        email_verified: {type: boolean}
+        display_name: {type: [string,'null']}
+        photo_url: {type: [string,'null'],format: uri}
+        profile_status: {$ref: '#/components/schemas/ProfileStatus'}
+        onboarding_completed: {type: boolean}
+        onboarding_completed_at: {type: [string,'null'],format: date-time}
+        created_at: {type: string,format: date-time}
+        updated_at: {type: string,format: date-time}
+        profile: {$ref: '#/components/schemas/UserProfile'}
+        next_step: {type: [string,'null'],enum: [complete_profile,create_birth_profile,null]}
+    LegacyBirthProfileInput: {type: object,additionalProperties: false,required: [displayName,birthDate,birthTimeStatus,birthPlaceLabel,latitude,longitude,timezone,astrologySystem],properties: {displayName: {type: string,minLength: 1,maxLength: 100},pronouns: {type: [string,'null']},birthDate: {type: string,format: date},birthTime: {type: [string,'null'],format: time},birthTimeStatus: {enum: [exact,approximate,unknown]},birthTimeAccuracyMinutes: {type: [integer,'null'],minimum: 0,maximum: 720},birthPlaceLabel: {type: string},latitude: {type: number,minimum: -90,maximum: 90},longitude: {type: number,minimum: -180,maximum: 180},timezone: {type: string,example: Asia/Kolkata},astrologySystem: {enum: [western_tropical]}}}
+    PersonInput: {allOf: [{$ref: '#/components/schemas/LegacyBirthProfileInput'},{type: object,required: [relationshipType,dataConsentAcknowledged],properties: {relationshipType: {enum: [partner,crush,spouse,ex,friend,dating,custom]},dataConsentAcknowledged: {type: boolean,description: The user confirms they have permission to use this person's birth information. Must be true before relationship analysis.},dataConsentAcknowledgedAt: {type: [string,'null'],format: date-time,readOnly: true},notes: {type: [string,'null'],maxLength: 2000},city: {type: [string,'null'],maxLength: 150},countryCode: {type: [string,'null'],pattern: '^[A-Z]{2}$'},chartStatus: {enum: [chart_not_generated,chart_ready],readOnly: true},dataQuality: {allOf: [{$ref: '#/components/schemas/DataQuality'}],readOnly: true},chartCalculationId: {type: string,format: uuid,readOnly: true}}}]}
+    RelationshipInput:
+      type: object
+      additionalProperties: false
+      required: [birth_profile_id,person_id,relationship_type]
+      properties:
+        birth_profile_id: {type: string,format: uuid}
+        person_id: {type: string,format: uuid}
+        relationship_type: {enum: [partner,spouse,crush,ex,friend,dating,custom]}
+        title: {type: [string,'null'],maxLength: 120}
+    RelationshipPatch:
+      type: object
+      additionalProperties: false
+      properties:
+        relationship_type: {enum: [partner,spouse,crush,ex,friend,dating,custom]}
+        title: {type: [string,'null'],maxLength: 120}
+    RelationshipStatus: {enum: [draft,ready,analysed,archived]}
+    DataQuality: {enum: [limited,standard,high]}
+    CompatibilityStatus: {enum: [compatibility_not_generated,compatibility_calculating,compatibility_ready,compatibility_failed]}
+    ReportStatus: {enum: [report_not_generated,report_generating,report_ready,report_failed]}
+    Relationship:
+      allOf:
+        - {$ref: '#/components/schemas/RelationshipInput'}
+        - {type: object,required: [id,status,compatibility_status,report_status,created_at,updated_at],properties: {id: {type: string,format: uuid},status: {$ref: '#/components/schemas/RelationshipStatus'},compatibility_status: {$ref: '#/components/schemas/CompatibilityStatus'},report_status: {$ref: '#/components/schemas/ReportStatus'},created_at: {type: string,format: date-time},updated_at: {type: string,format: date-time}}}
+    MatchInput: {type: object,required: [personId,focus],properties: {personId: {type: string,format: uuid},focus: {enum: [general,romantic,communication,long_term]}}}
+    ConversationInput:
+      type: object
+      additionalProperties: false
+      required: [contextType]
+      properties:
+        matchId: {type: [string,'null'],format: uuid,deprecated: true}
+        relationshipId: {type: [string,'null'],format: uuid}
+        title: {type: string,maxLength: 120}
+        contextType: {enum: [relationship,personal,general,match]}
+      description: relationshipId is required only for relationship context; matchId is accepted only for the deprecated match context.
+    SavedItemInput:
+      type: object
+      additionalProperties: false
+      required: [item_type]
+      properties:
+        item_type: {enum: [relationship_report,blueprint_insight,compatibility_guidance]}
+        relationship_id: {type: [string,'null'],format: uuid}
+        blueprint_id: {type: [string,'null'],format: uuid}
+        report_id: {type: [string,'null'],format: uuid}
+        content_key: {type: [string,'null'],maxLength: 120}
+    FeedbackInput: {type: object,required: [rating],properties: {rating: {enum: [helpful,not_helpful]},comment: {type: string,maxLength: 500}}}
+    Error: {type: object,properties: {error: {type: object,properties: {code: {type: string,example: VALIDATION_ERROR},message: {type: string},fields: {type: object,additionalProperties: {type: string}}}},meta: {type: object,properties: {requestId: {type: string,format: uuid}}}}}
+  responses:
+    Success: {description: Success,content: {application/json: {schema: {type: object,properties: {data: {},meta: {type: object,properties: {requestId: {type: string,format: uuid},timestamp: {type: string,format: date-time}}}}}}}}
+    Error: {description: Error,content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
+    CurrentUser: {description: Current account and profile,content: {application/json: {schema: {type: object,properties: {data: {$ref: '#/components/schemas/CurrentUser'}}}}}}
+    Profile: {description: Updated profile,content: {application/json: {schema: {type: object,properties: {data: {$ref: '#/components/schemas/UserProfile'}}}}}}
+    BirthProfile: {description: Birth profile with active chart reference,content: {application/json: {schema: {type: object,properties: {data: {$ref: '#/components/schemas/BirthProfile'}}}}}}
+    Chart: {description: Active deterministic chart and source profile,content: {application/json: {schema: {type: object,properties: {data: {type: object,properties: {birth_profile: {$ref: '#/components/schemas/BirthProfile'},chart: {$ref: '#/components/schemas/ChartCalculation'}}}}}}}}
+    DatingProfile: {description: Current user's editable dating profile,content: {application/json: {schema: {type: object,properties: {data: {$ref: '#/components/schemas/DatingProfile'}}}}}}
+    Relationship: {description: Private relationship summary and explicit generation states,content: {application/json: {schema: {type: object,properties: {data: {$ref: '#/components/schemas/Relationship'}}}}}}

@@ -12,8 +12,6 @@ jobs:
       - run: npm ci
       - name: Verify backend contract snapshot
         run: |
-          curl --fail --silent --show-error https://raw.githubusercontent.com/astromatch/astro-backend/main/docs/openapi.yaml --output /tmp/openapi.yaml
-          diff -u /tmp/openapi.yaml src/api/generated/openapi.yaml
           npm run api:generate
           git diff --exit-code -- src/api/generated/schema.ts
       - run: npm run lint

@@ -9,7 +9,7 @@ describe("backend readiness", () => {
     vi.stubGlobal("fetch", fetchMock);
     await expect(waitForBackend(1, 0)).resolves.toBe("ready");
     expect(fetchMock).toHaveBeenCalledWith(
-      "https://astromatch-api-k996.onrender.com/ready",
+      "https://144-24-126-123.sslip.io/ready",
       expect.objectContaining({ method: "GET", cache: "no-store" }),
     );
   });

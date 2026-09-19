@@ -6,7 +6,7 @@ function validateUser() {
     var nextButton = document.getElementById("nextcta");
 
     // Make an AJAX request to validate the user using the provided endpoint
-    fetch("https://astromatch-api-k996.onrender.com/validateUser", {
+    fetch("https://144-24-126-123.sslip.io/validateUser", {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
@@ -51,7 +51,7 @@ function signIn() {
     };
 
     // Make an AJAX request to your Go login endpoint
-    fetch("https://astromatch-api-k996.onrender.com/login", {
+    fetch("https://144-24-126-123.sslip.io/login", {
         method: "POST",
         headers: {
             "Content-Type": "application/json"

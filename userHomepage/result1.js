@@ -59,7 +59,7 @@ document.addEventListener('DOMContentLoaded', function () {
         };
 
         try {
-            const response = await fetch('https://astromatch-api-k996.onrender.com/compatibility', options);
+            const response = await fetch('https://144-24-126-123.sslip.io/compatibility', options);
             if (!response.ok) {
                 throw Error(response.status);
             }

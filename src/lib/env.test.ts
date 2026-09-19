@@ -9,7 +9,7 @@ describe('environment validation', () => {
       VITE_ENABLE_DEV_FIXTURES: '',
     });
 
-    expect(result.VITE_API_BASE_URL).toBe('https://astromatch-api-k996.onrender.com');
+    expect(result.VITE_API_BASE_URL).toBe('https://144-24-126-123.sslip.io');
     expect(result.VITE_ENABLE_ANALYTICS).toBe('false');
     expect(result.VITE_ENABLE_DEV_FIXTURES).toBe('false');
   });

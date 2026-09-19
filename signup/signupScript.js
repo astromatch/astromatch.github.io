@@ -12,7 +12,7 @@ function signupUser() {
     var errorMessage = document.getElementById("errorMessage");
 
     // Make an AJAX request to sign up the user using the provided endpoint
-    fetch("https://astromatch-api-k996.onrender.com/signup", {
+    fetch("https://144-24-126-123.sslip.io/signup", {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
@@ -52,7 +52,7 @@ function verifyOtp() {
     var errorMessage = document.getElementById("errorMessage");
 
     // Make an AJAX request to verify the user with the provided OTP and stored email
-    fetch("https://astromatch-api-k996.onrender.com/verifyuser", {
+    fetch("https://144-24-126-123.sslip.io/verifyuser", {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
